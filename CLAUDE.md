@@ -12,7 +12,22 @@
 - Tailwind CSS v4 для стилей
 - date-fns для работы с датами
 - react-router v7 для маршрутизации (createBrowserRouter, Link, useNavigate)
+- vite-plugin-pwa (Workbox): manifest, service worker, офлайн-запуск
 - Node 22 (см. .nvmrc), перед npm-командами — `nvm use`
+
+## Репозиторий (монорепо, npm workspaces)
+- apps/web — фронтенд (это приложение). Все пути `src/...` ниже — внутри apps/web.
+- apps/api — бэкенд на NestJS (итерация 2, ещё не создан).
+- packages/schemas — общие zod-схемы фронта и бэка (появятся вместе с apps/api;
+  до этого схемы живут в entities).
+- Один package-lock.json и node_modules в корне. Зависимость ставится в
+  конкретный workspace: `npm i <pkg> -w @gymlog/web`.
+- Деплой фронта — Vercel, Root Directory = apps/web, конфиг apps/web/vercel.json
+  (rewrite всех путей на index.html для SPA, immutable-кеш для /assets).
+- CI — .github/workflows/ci.yml: npm ci, typecheck, lint, build.
+- План вывода в прод и синхронизации — итерации: 1) деплой, схема v1, PWA,
+  бэкап; 2) NestJS API (Prisma, Postgres, email+пароль, JWT); 3) синхронизация
+  на фронте (local-first: outbox, push/pull, last-write-wins по updatedAt).
 
 ## Архитектура: Feature-Sliced Design
 - Слои (сверху вниз): app → pages → widgets → features → entities → shared.
@@ -46,6 +61,26 @@
   Все когда-либо замеренные части подставляются строками в новую форму
   с подсказкой предыдущего значения и даты; пустые строки не сохраняются.
 
+## Данные и синхронизация (схема v1)
+- Workout, Measurement, Exercise несут поля синхронизации createdAt, updatedAt,
+  deletedAt (ISO, deletedAt — nullable). Profile несёт updatedAt (nullable).
+  Схема — SyncMetaSchema в shared/lib/syncMeta.ts.
+- id генерируются на клиенте (createId → UUID v4), в том числе офлайн.
+- Экшены принимают данные без мета-полей (WorkoutInput, MeasurementInput,
+  ProfileInput) и сами ставят createdAt/updatedAt — фичи их не трогают.
+- Удаление — только мягкое (deletedAt). Удалённые записи остаются в сторе
+  как tombstone для синхронизации. Компоненты читают только активные записи:
+  useWorkouts / useMeasurements / useWorkoutById / useMeasurementById /
+  selectActive*. Читать state.workouts / state.measurements в UI нельзя.
+- persist версионирован: у каждого стора *_STATE_VERSION и migrate* в
+  model/migrations.ts (цепочка шагов `if (version < N)`). Любое изменение формы
+  данных = +1 к версии + шаг миграции. Без этого данные пользователя пропадут.
+- Хранилище (createPersistStorage) проверяет только конверт { state, version };
+  zod-валидация — в merge, после migrate, по каждой записи отдельно
+  (restoreItems). Невалидное не удаляется, а уходит в `<key>:corrupted`.
+- Резервная копия — features/data-backup (экспорт/импорт JSON, BackupSchema
+  с BACKUP_VERSION; импорт заменяет все данные после подтверждения).
+
 ## Где что лежит
 - Роутер — app/router/router.tsx; пути страниц — shared/config/routes.ts
   (ROUTES — шаблоны для роутера, paths — построение ссылок с id).
@@ -61,15 +96,15 @@
   dateInput.ts (значения `<input type="date">` ↔ ISO), normalizeName.ts
   (normalizeName, cleanName), formatNumber.ts (числа в формате ru-RU).
 - Обёртка localStorage — shared/lib/storage.ts (loadState, saveState,
-  createZodStorage — адаптер для zustand persist).
+  createPersistStorage, restoreItems, pickPersistedField, backupCorrupted).
 - Генерация id — shared/lib/createId.ts (не crypto.randomUUID напрямую:
-  он недоступен по http с телефона).
+  он недоступен по http с телефона; запасной путь — UUID v4 из getRandomValues).
 - Общие UI-компоненты — shared/ui (Button, Input, Combobox, ConfirmAction —
   двухшаговое подтверждение удаления, buttonStyles для Link).
 - Статистика тренировки (подходы, повторы, объём) — entities/workout/lib/getWorkoutStats.ts.
 - Сортировка «новые сверху» — только через sortWorkoutsDesc / sortMeasurementsDesc
   из entities. Даты хранятся с точностью до дня, поэтому при одинаковой дате
-  новее та запись, что введена позже (позже в массиве стора).
+  порядок решает createdAt, затем позиция в массиве стора.
 - Форма создания и редактирования тренировки — features/workout-form
   (WorkoutForm: без workout — создание, с workout — редактирование).
   ui/ — компоненты, model/ — черновик формы, zod-схема формы
@@ -90,7 +125,8 @@
   - pages/add-workout — `/workouts/new`;
   - pages/workout-details — `/workouts/:workoutId`, просмотр;
   - pages/edit-workout — `/workouts/:workoutId/edit`, редактирование и удаление;
-  - pages/profile — `/profile`, актуальные замеры и история сессий замеров;
+  - pages/profile — `/profile`, актуальные замеры, история сессий замеров,
+    экспорт/импорт данных;
   - pages/edit-profile — `/profile/edit`;
   - pages/add-measurement — `/profile/measurements/new`;
   - pages/measurement-details — `/profile/measurements/:measurementId`,
@@ -105,8 +141,9 @@
   черновик формы до сохранения).
 - Никаких any. Если тип неизвестен — unknown + проверка через zod.
 - Экспорты — именованные, не default.
-- Все данные из localStorage проходят через zod-схему при чтении.
-  Если данные невалидны — сбросить к дефолту и залогировать.
+- Все данные из localStorage проходят через zod-схему при чтении (после
+  миграции). Невалидные записи — в `<key>:corrupted` + console.warn, остальные
+  сохраняются; молча удалять данные пользователя нельзя.
 
 ## Стиль
 - Tailwind v4. Конфигурация через @theme в src/app/styles/index.css,
@@ -116,11 +153,11 @@
 - Крупные тач-таргеты (мин. 44px), контрастные кнопки.
 - Для условных классов использовать cn() из shared/lib/cn.ts (clsx + tailwind-merge).
 
-## Команды
-- npm run dev — запуск
-- npm run build — сборка
-- npm run lint — oxlint (конфиг .oxlintrc.json)
-- npm run typecheck — tsc --noEmit -p tsconfig.app.json
+## Команды (из корня репозитория)
+- npm run dev — запуск фронта
+- npm run build — сборка фронта (включая sw.js и manifest)
+- npm run lint — oxlint во всех workspaces (конфиг apps/web/.oxlintrc.json)
+- npm run typecheck — tsc --noEmit во всех workspaces
 
 ## Чего не делать
 - Не добавлять новые зависимости без явного запроса.

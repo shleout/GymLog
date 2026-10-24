@@ -1,4 +1,5 @@
 import { Link } from 'react-router'
+import { DataBackup } from '@/features/data-backup'
 import { MeasurementList } from '@/widgets/measurement-list'
 import { ProfileOverview } from '@/widgets/profile-overview'
 import { ROUTES } from '@/shared/config'
@@ -25,6 +26,10 @@ export const ProfilePage = () => (
     <section className="flex flex-col gap-3">
       <h2 className="text-lg font-semibold">История замеров</h2>
       <MeasurementList />
+    </section>
+    <section className="flex flex-col gap-3 border-t border-border pt-6">
+      <h2 className="text-lg font-semibold">Данные</h2>
+      <DataBackup />
     </section>
   </main>
 )
