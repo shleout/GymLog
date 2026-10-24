@@ -115,7 +115,11 @@
 - Форма новых замеров — features/add-measurement.
 - Список тренировок — widgets/workout-list/ui/ (карточки — ссылки на просмотр).
 - Просмотр тренировки (readonly) — widgets/workout-details/ui/.
-- Профиль (никнейм, рост, вес, последние замеры с изменением) — widgets/profile-overview/ui/.
+- Нижний таб-бар (Тренировки / Замеры / Профиль) — widgets/nav-bar/ui/. Показывается
+  только на верхнеуровневых страницах: они вложены в layout-роут app/ui/TabLayout.tsx.
+  Формы и страницы просмотра (с кнопкой «←») живут вне него, без бара.
+- Профиль (никнейм, рост, актуальный вес — ссылка на замеры) — widgets/profile-overview/ui/.
+- Актуальные значения веса и частей тела с изменением — widgets/latest-measurements/ui/.
 - Список сессий замеров (карточки — ссылки на просмотр) — widgets/measurement-list/ui/.
 - Просмотр сессии замеров (с изменением к предыдущим значениям) —
   widgets/measurement-details/ui/.
@@ -125,12 +129,11 @@
   - pages/add-workout — `/workouts/new`;
   - pages/workout-details — `/workouts/:workoutId`, просмотр;
   - pages/edit-workout — `/workouts/:workoutId/edit`, редактирование и удаление;
-  - pages/profile — `/profile`, актуальные замеры, история сессий замеров,
-    экспорт/импорт данных;
-  - pages/edit-profile — `/profile/edit`;
-  - pages/add-measurement — `/profile/measurements/new`;
-  - pages/measurement-details — `/profile/measurements/:measurementId`,
-    просмотр и удаление.
+  - pages/measurements — `/measurements`, актуальные замеры и история сессий;
+  - pages/add-measurement — `/measurements/new`;
+  - pages/measurement-details — `/measurements/:measurementId`, просмотр и удаление;
+  - pages/profile — `/profile`, никнейм, рост, вес, экспорт/импорт данных;
+  - pages/edit-profile — `/profile/edit`.
 
 ## Правила кода
 - Только функциональные компоненты и хуки. Никаких class-компонентов.

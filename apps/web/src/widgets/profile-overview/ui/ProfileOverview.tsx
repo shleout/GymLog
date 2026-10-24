@@ -1,13 +1,13 @@
 import { format, parseISO } from 'date-fns'
 import { ru } from 'date-fns/locale'
-import { useMemo, type ReactNode } from 'react'
+import { useMemo } from 'react'
+import { Link } from 'react-router'
 import { getLatestMeasurements, useMeasurements, type LatestValue } from '@/entities/measurement'
 import { useProfileStore } from '@/entities/profile'
+import { ROUTES } from '@/shared/config'
 import { cn, formatDiff, formatNumber } from '@/shared/lib'
 
 type ProfileOverviewProps = {
-  /** Rendered next to the measurements heading, e.g. a "new measurements" link. */
-  measurementsAction?: ReactNode
   className?: string
 }
 
@@ -16,7 +16,7 @@ const formatDate = (iso: string): string => format(parseISO(iso), 'd MMM yyyy', 
 const formatLatestDiff = (latest: LatestValue): string | null =>
   latest.previous ? formatDiff(latest.value, latest.previous.value) : null
 
-export const ProfileOverview = ({ measurementsAction, className }: ProfileOverviewProps) => {
+export const ProfileOverview = ({ className }: ProfileOverviewProps) => {
   const profile = useProfileStore((state) => state.profile)
   const measurements = useMeasurements()
   const latest = useMemo(() => getLatestMeasurements(measurements), [measurements])
@@ -48,8 +48,17 @@ export const ProfileOverview = ({ measurementsAction, className }: ProfileOvervi
             )}
           </dd>
         </div>
-        <div className="flex flex-col rounded-2xl bg-surface-muted px-4 py-3">
-          <dt className="text-xs font-medium uppercase text-text-muted">Вес</dt>
+        {/* Body weight lives in measurements, so the whole card links there (stretched link). */}
+        <div className="relative flex flex-col rounded-2xl bg-surface-muted px-4 py-3 transition-colors has-[a:hover]:bg-surface-muted/70 has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-primary">
+          <dt className="text-xs font-medium uppercase text-text-muted">
+            <Link
+              to={ROUTES.measurements}
+              className="flex justify-between outline-none after:absolute after:inset-0 after:rounded-2xl"
+            >
+              Вес
+              <span aria-hidden="true">›</span>
+            </Link>
+          </dt>
           <dd className="flex flex-col">
             {latest.weight ? (
               <>
@@ -67,38 +76,6 @@ export const ProfileOverview = ({ measurementsAction, className }: ProfileOvervi
           </dd>
         </div>
       </dl>
-
-      <section className="flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-4">
-          <h2 className="text-lg font-semibold">Замеры</h2>
-          {measurementsAction}
-        </div>
-
-        {latest.parts.length === 0 ? (
-          <p className="py-8 text-center text-text-muted">Замеров пока нет</p>
-        ) : (
-          <ul className="flex flex-col rounded-2xl bg-surface-muted px-4">
-            {latest.parts.map((part) => {
-              const diff = formatLatestDiff(part)
-              return (
-                <li
-                  key={part.key}
-                  className="flex min-h-14 items-center justify-between gap-3 border-b border-border py-2 last:border-b-0"
-                >
-                  <div className="flex min-w-0 flex-col">
-                    <span className="truncate font-medium">{part.name}</span>
-                    <span className="text-xs text-text-muted">{formatDate(part.date)}</span>
-                  </div>
-                  <div className="flex shrink-0 items-baseline gap-2">
-                    {diff && <span className="text-sm text-text-muted">{diff}</span>}
-                    <span className="text-lg font-bold">{formatNumber(part.value)} см</span>
-                  </div>
-                </li>
-              )
-            })}
-          </ul>
-        )}
-      </section>
     </div>
   )
 }

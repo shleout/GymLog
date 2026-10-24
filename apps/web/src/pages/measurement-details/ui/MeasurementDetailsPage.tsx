@@ -15,7 +15,7 @@ export const MeasurementDetailsPage = () => {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-xl flex-col gap-6 px-4 py-6">
       <header className="flex items-center gap-2">
-        <Link to={ROUTES.profile} aria-label="Назад в профиль" className={buttonStyles('ghost', 'px-3')}>
+        <Link to={ROUTES.measurements} aria-label="Назад к замерам" className={buttonStyles('ghost', 'px-3')}>
           ←
         </Link>
         {measurement ? (
@@ -38,7 +38,7 @@ export const MeasurementDetailsPage = () => {
           <div className="mt-4 flex flex-col border-t border-border pt-6">
             <DeleteMeasurementButton
               measurementId={measurement.id}
-              onDeleted={() => navigate(ROUTES.profile, { replace: true })}
+              onDeleted={() => navigate(ROUTES.measurements, { replace: true })}
             />
           </div>
         </>

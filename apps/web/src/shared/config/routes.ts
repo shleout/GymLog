@@ -4,15 +4,15 @@ export const ROUTES = {
   addWorkout: '/workouts/new',
   workout: '/workouts/:workoutId',
   editWorkout: '/workouts/:workoutId/edit',
+  measurements: '/measurements',
+  addMeasurement: '/measurements/new',
+  measurement: '/measurements/:measurementId',
   profile: '/profile',
   editProfile: '/profile/edit',
-  addMeasurement: '/profile/measurements/new',
-  measurement: '/profile/measurements/:measurementId',
 } as const
 
 export const paths = {
   workout: (workoutId: string) => `/workouts/${encodeURIComponent(workoutId)}`,
   editWorkout: (workoutId: string) => `/workouts/${encodeURIComponent(workoutId)}/edit`,
-  measurement: (measurementId: string) =>
-    `/profile/measurements/${encodeURIComponent(measurementId)}`,
+  measurement: (measurementId: string) => `/measurements/${encodeURIComponent(measurementId)}`,
 }
