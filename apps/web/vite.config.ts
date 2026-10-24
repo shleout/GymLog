@@ -37,6 +37,8 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'],
         // SPA routes offline: navigation requests get the precached index.html.
         navigateFallback: 'index.html',
+        // API is proxied on the same origin: opening /api/... directly must hit the network.
+        navigateFallbackDenylist: [/^\/api\//],
         cleanupOutdatedCaches: true,
       },
     }),
