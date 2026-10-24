@@ -17,19 +17,44 @@
 
 ## Репозиторий (монорепо, npm workspaces)
 - apps/web — фронтенд (это приложение). Все пути `src/...` ниже — внутри apps/web.
-- apps/api — бэкенд на NestJS (итерация 2, ещё не создан).
-- packages/schemas — общие zod-схемы фронта и бэка (появятся вместе с apps/api;
-  до этого схемы живут в entities).
+- apps/api — бэкенд на NestJS (см. раздел «Бэкенд»).
+- packages/schemas (@gymlog/schemas) — общие zod-схемы записей (Workout, Exercise,
+  Measurement, Profile, SyncMeta) и контракты API (auth, sync push/pull). Собирается
+  tsc в dist (ESM + .d.ts) — в postinstall корня и в prebuild фронта; при правке схем
+  держать запущенным `npm run dev:schemas`. entities/*/model/schemas.ts реэкспортируют
+  схемы записей отсюда; *StateSchema (форма данных в localStorage) — только во фронте.
 - Один package-lock.json и node_modules в корне. Зависимость ставится в
   конкретный workspace: `npm i <pkg> -w @gymlog/web`.
 - Деплой фронта — Vercel, Root Directory = apps/web, конфиг apps/web/vercel.json
   (rewrite всех путей на index.html для SPA, immutable-кеш для /assets).
-- CI — .github/workflows/ci.yml: npm ci, typecheck, lint, build.
+- Деплой API — Render (render.yaml, Blueprint), БД — Neon.
+- CI — .github/workflows/ci.yml: npm ci, typecheck, lint, build (schemas, api, web).
 - План вывода в прод и синхронизации — итерации: 1) деплой, схема v1, PWA,
   бэкап; 2) NestJS API (Prisma, Postgres, email+пароль, JWT); 3) синхронизация
   на фронте (local-first: outbox, push/pull, last-write-wins по updatedAt).
 
-## Архитектура: Feature-Sliced Design
+## Бэкенд (apps/api)
+- NestJS 12, ESM ("type": "module", относительные импорты с `.js`). Сборка — tsc
+  (без Nest CLI: на Node 22.12 он падает на require(esm)); dev — tsc --watch + node --watch.
+- Prisma 7: prisma/schema.prisma, prisma.config.ts (URL БД; DIRECT_URL — для миграций
+  в обход пулера Neon), клиент генерируется в src/generated (в .gitignore, postinstall),
+  подключение — через драйвер-адаптер @prisma/adapter-pg.
+- Локальная БД — compose.yaml в корне, Postgres на порту 5434. Переменные — apps/api/.env
+  (шаблон .env.example), валидируются zod в src/config/env.ts (getEnv).
+- Все маршруты под /api. Фронт ходит в API на своём origin через прокси (Vite в dev,
+  rewrite Vercel в проде) — поэтому без CORS и с SameSite=Strict cookie.
+- Валидация входа — ZodValidationPipe со схемами из @gymlog/schemas (не class-validator).
+- Auth (src/auth): email + пароль (argon2). Access JWT 15 мин в теле ответа, refresh —
+  случайный токен в httpOnly cookie (path /api/auth), в БД — его SHA-256, ротация при
+  каждом /auth/refresh. Глобальный AuthGuard: всё закрыто, кроме @Public().
+- Sync (src/sync): POST /sync/push — записи валидируются по одной (невалидные →
+  rejected, остальные пишутся), last-write-wins по клиентскому updatedAt (равный — skip).
+  GET /sync/pull?cursor= — изменения после ревизии постранично (SYNC_BATCH_LIMIT, hasMore).
+  revision — счётчик на пользователя (User.revision), выдаётся под блокировкой строки
+  пользователя (FOR UPDATE), pull читает все таблицы в одном снапшоте (RepeatableRead).
+- Ключ синхронизируемых таблиц — (userId, id): id приходят с клиента.
+
+## Архитектура фронта: Feature-Sliced Design
 - Слои (сверху вниз): app → pages → widgets → features → entities → shared.
 - Импорт разрешён только из слоёв СТРОГО НИЖЕ. Импорт внутри одного слоя
   между разными слайсами запрещён.
@@ -64,7 +89,8 @@
 ## Данные и синхронизация (схема v1)
 - Workout, Measurement, Exercise несут поля синхронизации createdAt, updatedAt,
   deletedAt (ISO, deletedAt — nullable). Profile несёт updatedAt (nullable).
-  Схема — SyncMetaSchema в shared/lib/syncMeta.ts.
+  Схема — SyncMetaSchema в packages/schemas (во фронте реэкспорт из shared/lib/syncMeta.ts
+  вместе с createSyncMeta).
 - id генерируются на клиенте (createId → UUID v4), в том числе офлайн.
 - Экшены принимают данные без мета-полей (WorkoutInput, MeasurementInput,
   ProfileInput) и сами ставят createdAt/updatedAt — фичи их не трогают.
@@ -90,7 +116,8 @@
 - Последние и предыдущие значения веса и каждой части тела —
   entities/measurement/lib/getLatestMeasurements.ts; значения, предшествующие
   конкретной сессии, — entities/measurement/lib/getPreviousValues.ts.
-- Zod-схемы — entities/{workout,exercise,profile,measurement}/model/schemas.ts;
+- Zod-схемы записей — packages/schemas/src, во фронте импортируются через
+  entities/{workout,exercise,profile,measurement}/model/schemas.ts (там же *StateSchema);
   типы выводятся из схем через z.infer (model/types.ts).
 - Хелперы форм — shared/lib: form.ts (parseDecimal, collectErrors, FormErrors),
   dateInput.ts (значения `<input type="date">` ↔ ISO), normalizeName.ts
@@ -158,7 +185,10 @@
 
 ## Команды (из корня репозитория)
 - npm run dev — запуск фронта
-- npm run build — сборка фронта (включая sw.js и manifest)
+- npm run db:up / db:down — локальный Postgres в Docker
+- npm run dev:api — запуск API (нужны db:up и apps/api/.env)
+- npm run db:migrate -w @gymlog/api — новая миграция после правки schema.prisma
+- npm run build — сборка schemas, api и фронта (включая sw.js и manifest)
 - npm run lint — oxlint во всех workspaces (конфиг apps/web/.oxlintrc.json)
 - npm run typecheck — tsc --noEmit во всех workspaces
 

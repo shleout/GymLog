@@ -1,0 +1,114 @@
+// Data model of the GymLog API. After changing it run `npm run db:migrate -w @gymlog/api`.
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+  runtime             = "nodejs"
+}
+
+// The connection URL lives in prisma.config.ts (Prisma 7).
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  email        String   @unique
+  passwordHash String
+  /// Last sync revision handed out to this user's records. Incremented under a row lock
+  /// in every push, so revisions of one user are committed strictly in order (see SyncService).
+  revision     Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  refreshTokens RefreshToken[]
+  workouts      Workout[]
+  exercises     Exercise[]
+  measurements  Measurement[]
+  profile       Profile?
+}
+
+/// Opaque refresh tokens; only a SHA-256 hash is stored, so a DB leak doesn't leak sessions.
+model RefreshToken {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  userId    String   @db.Uuid
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Synced records. Ids come from the client (UUIDs generated offline), so the primary key
+// is (userId, id): one user's ids never collide with or reveal another user's records.
+// createdAt / updatedAt / deletedAt are the client's values — updatedAt resolves conflicts
+// (last write wins), deletedAt is a soft delete kept as a tombstone.
+// `revision` is the server-side change counter that `GET /sync/pull?cursor=` pages by.
+
+model Workout {
+  userId    String    @db.Uuid
+  id        String
+  date      DateTime
+  /// WorkoutEntry[] — always read and written as a whole, validated by @gymlog/schemas.
+  entries   Json
+  createdAt DateTime
+  updatedAt DateTime
+  deletedAt DateTime?
+  revision  Int
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, id])
+  @@index([userId, revision])
+}
+
+model Exercise {
+  userId      String    @db.Uuid
+  id          String
+  name        String
+  muscleGroup String?
+  createdAt   DateTime
+  updatedAt   DateTime
+  deletedAt   DateTime?
+  revision    Int
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, id])
+  @@index([userId, revision])
+}
+
+model Measurement {
+  userId    String    @db.Uuid
+  id        String
+  date      DateTime
+  /// Body weight, kg.
+  weight    Float?
+  /// MeasurementValue[] — validated by @gymlog/schemas.
+  values    Json
+  createdAt DateTime
+  updatedAt DateTime
+  deletedAt DateTime?
+  revision  Int
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, id])
+  @@index([userId, revision])
+}
+
+/// One per user, created by the first push of an edited profile.
+model Profile {
+  userId    String    @id @db.Uuid
+  nickname  String
+  /// cm
+  height    Float?
+  updatedAt DateTime?
+  revision  Int
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

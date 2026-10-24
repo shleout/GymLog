@@ -9,9 +9,14 @@
     "node": ">=22"
   },
   "scripts": {
+    "postinstall": "npm run build -w @gymlog/schemas",
     "dev": "npm run dev -w @gymlog/web",
-    "build": "npm run build -w @gymlog/web",
+    "dev:api": "npm run dev -w @gymlog/api",
+    "dev:schemas": "npm run dev -w @gymlog/schemas",
+    "build": "npm run build -w @gymlog/schemas && npm run build -w @gymlog/api && npm run build -w @gymlog/web",
     "lint": "npm run lint --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "db:up": "docker compose up -d --wait",
+    "db:down": "docker compose down"
   }
 }

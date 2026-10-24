@@ -1,0 +1,30 @@
+# Render Blueprint for the API (Dashboard → New → Blueprint → this repo).
+# Node version comes from .nvmrc. The free plan sleeps after ~15 min idle; the first request
+# then waits for a cold start — fine for a local-first app that syncs in the background.
+services:
+  - type: web
+    name: gymlog-api
+    runtime: node
+    plan: free
+    region: frankfurt
+    # Root install: workspaces + postinstall (builds packages/schemas, runs prisma generate).
+    # --include=dev: TypeScript and type packages are needed for the build.
+    buildCommand: npm ci --include=dev && npm run build -w @gymlog/api
+    # Free plan has no pre-deploy step, so pending migrations are applied on start.
+    startCommand: npm run db:deploy -w @gymlog/api && npm run start -w @gymlog/api
+    healthCheckPath: /api/health
+    buildFilter:
+      paths:
+        - apps/api/**
+        - packages/schemas/**
+        - package-lock.json
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Neon: pooled connection string for the app, direct one for migrations.
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        generateValue: true

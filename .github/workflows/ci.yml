@@ -15,7 +15,9 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       # `npm ci` installs exactly what package-lock.json says and fails if it is out of sync.
+      # Its postinstall builds packages/schemas and generates the Prisma client (no DB needed).
       - run: npm ci
       - run: npm run typecheck
       - run: npm run lint
+      # Builds schemas, api and web.
       - run: npm run build
