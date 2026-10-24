@@ -4,6 +4,7 @@ import { useShallow } from 'zustand/react/shallow'
 import {
   createPersistStorage,
   createSyncMeta,
+  mergeRemote,
   nowIso,
   pickPersistedField,
   restoreItems,
@@ -18,6 +19,8 @@ type MeasurementActions = {
   addMeasurement: (measurement: MeasurementInput) => void
   /** Soft delete: the record stays as a tombstone for sync. */
   deleteMeasurement: (id: string) => void
+  /** Records from the server, merged last-write-wins; `updatedAt` is kept as is. */
+  applyRemoteMeasurements: (measurements: Measurement[]) => void
 }
 
 export type MeasurementStore = MeasurementState & MeasurementActions
@@ -39,6 +42,8 @@ export const useMeasurementStore = create<MeasurementStore>()(
             ),
           }
         }),
+      applyRemoteMeasurements: (measurements) =>
+        set((state) => ({ measurements: mergeRemote(state.measurements, measurements) })),
     }),
     {
       name: STORAGE_KEY,

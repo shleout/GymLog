@@ -43,6 +43,10 @@ export default defineConfig({
       },
     }),
   ],
+  // Same origin as in prod (Vercel rewrite): no CORS, SameSite=Strict refresh cookie works.
+  server: {
+    proxy: { '/api': 'http://localhost:3000' },
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),

@@ -1,23 +1,36 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { backupCorrupted, createPersistStorage, nowIso, pickPersistedField } from '@/shared/lib'
+import {
+  backupCorrupted,
+  createPersistStorage,
+  isNewer,
+  nowIso,
+  pickPersistedField,
+} from '@/shared/lib'
 import { migrateProfileState, PROFILE_STATE_VERSION } from './migrations'
 import { ProfileSchema } from './schemas'
-import type { ProfileInput, ProfileState } from './types'
+import type { Profile, ProfileInput, ProfileState } from './types'
 
 const STORAGE_KEY = 'gymlog-profile'
 
 type ProfileActions = {
   updateProfile: (profile: ProfileInput) => void
+  /** Profile from the server, applied only when newer (last write wins); `updatedAt` is kept. */
+  applyRemoteProfile: (profile: Profile) => void
 }
 
 export type ProfileStore = ProfileState & ProfileActions
 
 export const useProfileStore = create<ProfileStore>()(
   persist(
-    (set): ProfileStore => ({
+    (set, get): ProfileStore => ({
       profile: { nickname: '', updatedAt: null },
       updateProfile: (profile) => set({ profile: { ...profile, updatedAt: nowIso() } }),
+      applyRemoteProfile: (profile) => {
+        const local = get().profile.updatedAt
+        if (profile.updatedAt === null) return
+        if (local === null || isNewer(profile.updatedAt, local)) set({ profile })
+      },
     }),
     {
       name: STORAGE_KEY,

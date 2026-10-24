@@ -5,6 +5,7 @@ import {
   createId,
   createPersistStorage,
   createSyncMeta,
+  mergeRemote,
   pickPersistedField,
   restoreItems,
 } from '@/shared/lib'
@@ -18,6 +19,8 @@ const STORAGE_KEY = 'gymlog-exercises'
 type ExerciseActions = {
   /** Returns the saved exercise with this name or creates a new one. */
   ensureExercise: (name: string) => Exercise
+  /** Records from the server, merged last-write-wins; `updatedAt` is kept as is. */
+  applyRemoteExercises: (exercises: Exercise[]) => void
 }
 
 export type ExerciseStore = ExerciseState & ExerciseActions
@@ -37,6 +40,8 @@ export const useExerciseStore = create<ExerciseStore>()(
         set((state) => ({ exercises: [...state.exercises, exercise] }))
         return exercise
       },
+      applyRemoteExercises: (exercises) =>
+        set((state) => ({ exercises: mergeRemote(state.exercises, exercises) })),
     }),
     {
       name: STORAGE_KEY,

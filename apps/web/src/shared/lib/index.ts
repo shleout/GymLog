@@ -8,6 +8,7 @@ export {
 } from './dateInput'
 export { collectErrors, parseDecimal, type FormErrors } from './form'
 export { formatDiff, formatNumber } from './formatNumber'
+export { isNewer, mergeRemote } from './lww'
 export { cleanName, normalizeName } from './normalizeName'
 export {
   backupCorrupted,

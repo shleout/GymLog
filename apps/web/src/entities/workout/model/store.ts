@@ -4,6 +4,7 @@ import { useShallow } from 'zustand/react/shallow'
 import {
   createPersistStorage,
   createSyncMeta,
+  mergeRemote,
   nowIso,
   pickPersistedField,
   restoreItems,
@@ -21,6 +22,8 @@ type WorkoutActions = {
   /** Soft delete: the record stays as a tombstone for sync. */
   deleteWorkout: (id: string) => void
   addExerciseToWorkout: (workoutId: string, entry: WorkoutEntry) => void
+  /** Records from the server, merged last-write-wins; `updatedAt` is kept as is. */
+  applyRemoteWorkouts: (workouts: Workout[]) => void
 }
 
 export type WorkoutStore = WorkoutState & WorkoutActions
@@ -50,6 +53,8 @@ export const useWorkoutStore = create<WorkoutStore>()(
             entries: [...workout.entries, entry],
           })),
         })),
+      applyRemoteWorkouts: (workouts) =>
+        set((state) => ({ workouts: mergeRemote(state.workouts, workouts) })),
     }),
     {
       name: STORAGE_KEY,

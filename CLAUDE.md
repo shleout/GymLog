@@ -41,8 +41,8 @@
   подключение — через драйвер-адаптер @prisma/adapter-pg.
 - Локальная БД — compose.yaml в корне, Postgres на порту 5434. Переменные — apps/api/.env
   (шаблон .env.example), валидируются zod в src/config/env.ts (getEnv).
-- Все маршруты под /api. Фронт ходит в API на своём origin через прокси (Vite в dev,
-  rewrite Vercel в проде) — поэтому без CORS и с SameSite=Strict cookie.
+- Все маршруты под /api. Фронт ходит в API на своём origin через прокси (Vite в dev —
+  server.proxy на localhost:3000, rewrite Vercel в проде) — поэтому без CORS и с SameSite=Strict cookie.
 - Валидация входа — ZodValidationPipe со схемами из @gymlog/schemas (не class-validator).
 - Auth (src/auth): email + пароль (argon2). Access JWT 15 мин в теле ответа, refresh —
   случайный токен в httpOnly cookie (path /api/auth), в БД — его SHA-256, ротация при
@@ -124,6 +124,24 @@
   (normalizeName, cleanName), formatNumber.ts (числа в формате ru-RU).
 - Обёртка localStorage — shared/lib/storage.ts (loadState, saveState,
   createPersistStorage, restoreItems, pickPersistedField, backupCorrupted).
+- HTTP-клиент — shared/api/client.ts: apiRequest (на 401 — refresh и повтор), publicRequest,
+  ApiError (status 0 — сервер недоступен: это не повод разлогинивать). Access-токен — только
+  в памяти модуля; refreshSession — single-flight (в вкладке общий промис, между вкладками
+  Web Lock), т.к. сервер ротирует refresh-токен и параллельный refresh получил бы 401.
+- Сессия — entities/session: стор (persist только user, без токенов), login/register/logout,
+  initSession (вызывается в app/App.tsx: слушатели refresh + фоновая проверка сессии).
+- Вход обязателен: гарды RequireAuth / RequireGuest в app/ui/AuthGuard.tsx. Приложение
+  открывается сразу по сохранённому user (в т.ч. офлайн); на /login выкидывает только 401
+  от refresh. Форма входа/регистрации и кнопка выхода — features/auth, страница — pages/login.
+- Синхронизация: стор entities/sync (cursor, synced, rejected, lastSyncedAt; status — не
+  персистится), движок features/sync/model/syncEngine.ts (startSync в app/App.tsx, requestSync).
+  Outbox не хранится, а вычисляется (features/sync/model/pending.ts): запись ждёт отправки,
+  если её updatedAt ≠ synced[`<entity>:<id>`] (профиль — ключ `profile`). Цикл: push → pull
+  (пока hasMore), single-flight. Триггеры: смена пользователя, правка в сторе (debounce 2 с),
+  online, возврат во вкладку, опрос раз в 2 мин, повтор с backoff. Другой userId → resetForUser
+  (всё локальное уходит на сервер). Записи с сервера — через applyRemote* в сторах entities
+  (mergeRemote / isNewer из shared/lib/lww.ts, LWW по updatedAt, updatedAt не трогают);
+  из pull валидируются по одной (restoreItems), битые — в `gymlog-sync-pull:corrupted`.
 - Генерация id — shared/lib/createId.ts (не crypto.randomUUID напрямую:
   он недоступен по http с телефона; запасной путь — UUID v4 из getRandomValues).
 - Общие UI-компоненты — shared/ui (Button, Input, Combobox, ConfirmAction —
@@ -160,7 +178,8 @@
   - pages/add-measurement — `/measurements/new`;
   - pages/measurement-details — `/measurements/:measurementId`, просмотр и удаление;
   - pages/profile — `/profile`, никнейм, рост, вес, экспорт/импорт данных;
-  - pages/edit-profile — `/profile/edit`.
+  - pages/edit-profile — `/profile/edit`;
+  - pages/login — `/login`, вход и регистрация (единственная страница без входа).
 
 ## Правила кода
 - Только функциональные компоненты и хуки. Никаких class-компонентов.
