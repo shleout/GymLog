@@ -3,12 +3,13 @@ import { persist } from 'zustand/middleware'
 import { backupCorrupted, createPersistStorage } from '@/shared/lib'
 import { migrateSyncState, SYNC_STATE_VERSION } from './migrations'
 import { SyncStateSchema } from './schemas'
-import type { RejectedRecord, SyncState, SyncStatus } from './types'
+import type { RejectedRecord, SyncOwner, SyncState, SyncStatus } from './types'
 
 const STORAGE_KEY = 'gymlog-sync'
 
-const initialState = (userId: string | null): SyncState => ({
-  userId,
+const initialState = (owner: SyncOwner | null): SyncState => ({
+  userId: owner?.id ?? null,
+  userEmail: owner?.email ?? null,
   cursor: 0,
   synced: {},
   rejected: {},
@@ -17,7 +18,9 @@ const initialState = (userId: string | null): SyncState => ({
 
 type SyncActions = {
   /** Starts over for another account: everything local becomes pending, pull starts at 0. */
-  resetForUser: (userId: string) => void
+  resetForUser: (owner: SyncOwner) => void
+  /** Local data was wiped: nothing on the device belongs to any account. */
+  clearSyncState: () => void
   markSynced: (versions: Record<string, string>) => void
   markRejected: (records: Record<string, RejectedRecord>) => void
   setCursor: (cursor: number) => void
@@ -36,7 +39,8 @@ export const useSyncStore = create<SyncStore>()(
       ...initialState(null),
       status: 'idle',
       error: null,
-      resetForUser: (userId) => set(initialState(userId)),
+      resetForUser: (owner) => set(initialState(owner)),
+      clearSyncState: () => set({ ...initialState(null), status: 'idle', error: null }),
       markSynced: (versions) =>
         set((state) => {
           const rejected = { ...state.rejected }
@@ -63,8 +67,9 @@ export const useSyncStore = create<SyncStore>()(
         backupCorrupted(STORAGE_KEY, persisted)
         return current
       },
-      partialize: ({ userId, cursor, synced, rejected, lastSyncedAt }): SyncState => ({
+      partialize: ({ userId, userEmail, cursor, synced, rejected, lastSyncedAt }): SyncState => ({
         userId,
+        userEmail,
         cursor,
         synced,
         rejected,

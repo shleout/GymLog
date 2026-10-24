@@ -7,8 +7,12 @@ export const RejectedRecordSchema = z.object({
 })
 
 export const SyncStateSchema = z.object({
-  /** Account the rest of this state belongs to; another account starts from scratch. */
+  /**
+   * Account the local data and the rest of this state belong to; `null` — data created
+   * before any sign-in (uploaded to whoever signs in first).
+   */
   userId: z.string().nullable(),
+  userEmail: z.string().nullable(),
   /** Server revision already pulled. */
   cursor: z.number().int().min(0),
   /**

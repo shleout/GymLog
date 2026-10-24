@@ -46,8 +46,8 @@ export const DataBackup = () => {
   return (
     <div className="flex flex-col gap-3">
       <p className="text-sm text-text-muted">
-        Пока данные хранятся только на этом устройстве. Сохраните резервную копию в файл, чтобы не
-        потерять их или перенести на другое устройство.
+        Данные синхронизируются с аккаунтом. Резервная копия в файл — на всякий случай: её можно
+        сохранить у себя и восстановить в любой момент.
       </p>
       <div className="grid grid-cols-2 gap-2">
         <Button
@@ -77,11 +77,11 @@ export const DataBackup = () => {
           aria-label="Подтверждение импорта"
           className="flex flex-col gap-3 rounded-2xl border border-danger/30 bg-danger/5 p-4"
         >
-          <p className="font-semibold">Заменить все данные на этом устройстве?</p>
+          <p className="font-semibold">Заменить все данные?</p>
           <p className="text-sm text-text-muted">
             Копия от {format(parseISO(pending.exportedAt), 'd MMMM yyyy, HH:mm', { locale: ru })}:
             тренировок — {summary.workouts}, сессий замеров — {summary.measurements}. Текущие данные
-            будут удалены.
+            будут удалены — в аккаунте и на всех устройствах после синхронизации.
           </p>
           <div className="grid grid-cols-2 gap-2">
             <Button variant="secondary" autoFocus onClick={() => setPending(null)}>

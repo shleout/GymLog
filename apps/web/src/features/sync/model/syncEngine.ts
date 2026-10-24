@@ -3,11 +3,13 @@ import { z } from 'zod'
 import { ExerciseSchema, useExerciseStore } from '@/entities/exercise'
 import { MeasurementSchema, useMeasurementStore } from '@/entities/measurement'
 import { ProfileSchema, useProfileStore, type Profile } from '@/entities/profile'
-import { useSessionStore } from '@/entities/session'
+import { useSessionStore, type User } from '@/entities/session'
 import { useSyncStore, type RejectedRecord } from '@/entities/sync'
 import { useWorkoutStore, WorkoutSchema } from '@/entities/workout'
 import { ApiError, apiRequest, isNetworkError } from '@/shared/api'
 import { backupCorrupted, nowIso, restoreItems } from '@/shared/lib'
+import { hasForeignData } from './foreignData'
+import { mergeDuplicateExercises } from './mergeDuplicateExercises'
 import { collectPending, PROFILE_KEY, recordKey, type LocalData } from './pending'
 
 /** Pause after a local edit, so a burst of edits (sets in a row) goes out as one push. */
@@ -125,6 +127,8 @@ const pull = async (userId: string): Promise<void> => {
     assertSameUser(userId)
     applyPage(page.changes)
     useSyncStore.getState().setCursor(page.cursor)
+    // Outside `applyingRemote` on purpose: the merge is a local edit and has to be pushed.
+    if (page.changes.exercises.length > 0) mergeDuplicateExercises()
     hasMore = page.hasMore
   }
 }
@@ -142,8 +146,9 @@ const scheduleRetry = (): void => {
 /** Push first: then the pull already reflects the server's verdict on our own changes. */
 const syncOnce = async (): Promise<void> => {
   const user = useSessionStore.getState().user
-  if (!user) return
   const sync = useSyncStore.getState()
+  // Not signed in, or another account's data is on the device and the user hasn't decided yet.
+  if (!user || sync.userId !== user.id) return
   if (!navigator.onLine) {
     sync.setStatus('offline')
     return // the `online` event starts the next attempt
@@ -203,15 +208,19 @@ const scheduleAfterLocalChange = (): void => {
   localChangeTimer = setTimeout(requestSync, LOCAL_CHANGE_DELAY_MS)
 }
 
-const handleUser = (userId: string | undefined): void => {
-  if (!userId) {
+const handleUser = (user: User | null): void => {
+  if (!user) {
     clearTimeout(retryTimer)
     clearTimeout(localChangeTimer)
     return
   }
-  // Sync metadata of another account says nothing about this one: start over,
-  // which also uploads everything that is on the device.
-  if (useSyncStore.getState().userId !== userId) useSyncStore.getState().resetForUser(userId)
+  if (useSyncStore.getState().userId !== user.id) {
+    // Another account's data: wait for the user's choice (ForeignDataPrompt).
+    if (hasForeignData(user.id)) return
+    // Sync metadata of another account says nothing about this one: start over,
+    // which also uploads data created before any sign-in.
+    useSyncStore.getState().resetForUser(user)
+  }
   requestSync()
 }
 
@@ -228,7 +237,7 @@ export const startSync = (): void => {
   useProfileStore.subscribe(scheduleAfterLocalChange)
 
   useSessionStore.subscribe((state, prev) => {
-    if (state.user?.id !== prev.user?.id) handleUser(state.user?.id)
+    if (state.user?.id !== prev.user?.id) handleUser(state.user)
   })
 
   window.addEventListener('online', requestSync)
@@ -239,5 +248,5 @@ export const startSync = (): void => {
     if (document.visibilityState === 'visible') requestSync()
   }, POLL_INTERVAL_MS)
 
-  handleUser(useSessionStore.getState().user?.id)
+  handleUser(useSessionStore.getState().user)
 }

@@ -6,6 +6,7 @@ import {
   createPersistStorage,
   createSyncMeta,
   mergeRemote,
+  nowIso,
   pickPersistedField,
   restoreItems,
 } from '@/shared/lib'
@@ -21,6 +22,8 @@ type ExerciseActions = {
   ensureExercise: (name: string) => Exercise
   /** Records from the server, merged last-write-wins; `updatedAt` is kept as is. */
   applyRemoteExercises: (exercises: Exercise[]) => void
+  /** Soft delete: the records stay as tombstones for sync. */
+  deleteExercises: (ids: string[]) => void
 }
 
 export type ExerciseStore = ExerciseState & ExerciseActions
@@ -42,6 +45,15 @@ export const useExerciseStore = create<ExerciseStore>()(
       },
       applyRemoteExercises: (exercises) =>
         set((state) => ({ exercises: mergeRemote(state.exercises, exercises) })),
+      deleteExercises: (ids) =>
+        set((state) => {
+          const now = nowIso()
+          return {
+            exercises: state.exercises.map((exercise) =>
+              ids.includes(exercise.id) ? { ...exercise, deletedAt: now, updatedAt: now } : exercise,
+            ),
+          }
+        }),
     }),
     {
       name: STORAGE_KEY,

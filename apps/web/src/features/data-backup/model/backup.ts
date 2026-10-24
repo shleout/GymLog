@@ -50,12 +50,34 @@ export const parseBackupFile = async (file: File): Promise<ParseBackupResult> =>
   return { ok: true, backup: result.data }
 }
 
-/** Replaces all local data. `setState` goes through `persist`, so the data is saved right away. */
+type SyncedRecord = { id: string; updatedAt: string; deletedAt: string | null }
+
+/**
+ * The imported state must win over the server's: every imported record gets `updatedAt = now`
+ * (a file exported last month would otherwise lose last-write-wins), and records that exist
+ * now but not in the file become tombstones, so "replace" reaches the server and other devices.
+ */
+const replaceRecords = <T extends SyncedRecord>(current: T[], imported: T[], now: string): T[] => {
+  const importedIds = new Set(imported.map((record) => record.id))
+  const removed = current
+    .filter((record) => !importedIds.has(record.id))
+    .map((record) => ({ ...record, deletedAt: record.deletedAt ?? now, updatedAt: now }))
+  return [...imported.map((record) => ({ ...record, updatedAt: now })), ...removed]
+}
+
+/** Replaces all data. `setState` goes through `persist`, so the data is saved right away. */
 export const restoreBackup = ({ data }: Backup): void => {
-  useWorkoutStore.setState({ workouts: data.workouts })
-  useExerciseStore.setState({ exercises: data.exercises })
-  useMeasurementStore.setState({ measurements: data.measurements })
-  useProfileStore.setState({ profile: data.profile })
+  const now = nowIso()
+  useWorkoutStore.setState((state) => ({
+    workouts: replaceRecords(state.workouts, data.workouts, now),
+  }))
+  useExerciseStore.setState((state) => ({
+    exercises: replaceRecords(state.exercises, data.exercises, now),
+  }))
+  useMeasurementStore.setState((state) => ({
+    measurements: replaceRecords(state.measurements, data.measurements, now),
+  }))
+  useProfileStore.setState({ profile: { ...data.profile, updatedAt: now } })
 }
 
 export const getBackupSummary = ({ data }: Backup) => ({

@@ -105,7 +105,9 @@
   zod-валидация — в merge, после migrate, по каждой записи отдельно
   (restoreItems). Невалидное не удаляется, а уходит в `<key>:corrupted`.
 - Резервная копия — features/data-backup (экспорт/импорт JSON, BackupSchema
-  с BACKUP_VERSION; импорт заменяет все данные после подтверждения).
+  с BACKUP_VERSION; импорт заменяет все данные после подтверждения). Импорт побеждает
+  сервер: всем записям из файла ставится updatedAt = now, а записи, которых нет в файле,
+  становятся tombstone — так замена доходит до аккаунта и других устройств.
 
 ## Где что лежит
 - Роутер — app/router/router.tsx; пути страниц — shared/config/routes.ts
@@ -132,14 +134,20 @@
   initSession (вызывается в app/App.tsx: слушатели refresh + фоновая проверка сессии).
 - Вход обязателен: гарды RequireAuth / RequireGuest в app/ui/AuthGuard.tsx. Приложение
   открывается сразу по сохранённому user (в т.ч. офлайн); на /login выкидывает только 401
-  от refresh. Форма входа/регистрации и кнопка выхода — features/auth, страница — pages/login.
+  от refresh. Форма входа/регистрации — features/auth, страница — pages/login. Email, статус
+  синхронизации и выход (выбор: оставить данные / удалить) — widgets/account.
 - Синхронизация: стор entities/sync (cursor, synced, rejected, lastSyncedAt; status — не
   персистится), движок features/sync/model/syncEngine.ts (startSync в app/App.tsx, requestSync).
   Outbox не хранится, а вычисляется (features/sync/model/pending.ts): запись ждёт отправки,
   если её updatedAt ≠ synced[`<entity>:<id>`] (профиль — ключ `profile`). Цикл: push → pull
   (пока hasMore), single-flight. Триггеры: смена пользователя, правка в сторе (debounce 2 с),
-  online, возврат во вкладку, опрос раз в 2 мин, повтор с backoff. Другой userId → resetForUser
-  (всё локальное уходит на сервер). Записи с сервера — через applyRemote* в сторах entities
+  online, возврат во вкладку, опрос раз в 2 мин, повтор с backoff.
+  Владелец локальных данных — entities/sync userId/userEmail. При входе: тот же userId —
+  продолжаем; null (данные до входа) или пустое устройство — resetForUser, всё уходит на
+  сервер; другой аккаунт с данными — синхронизация стоит, вместо приложения ForeignDataPrompt
+  (в RequireAuth): загрузить в этот аккаунт / удалить с устройства / выйти.
+  После pull — mergeDuplicateExercises: одно упражнение на normalizeName (раньше createdAt,
+  затем меньший id), тренировки переписываются на него, остальные — мягко удаляются. Записи с сервера — через applyRemote* в сторах entities
   (mergeRemote / isNewer из shared/lib/lww.ts, LWW по updatedAt, updatedAt не трогают);
   из pull валидируются по одной (restoreItems), битые — в `gymlog-sync-pull:corrupted`.
 - Генерация id — shared/lib/createId.ts (не crypto.randomUUID напрямую:

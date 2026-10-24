@@ -1,8 +1,6 @@
 import { Link } from 'react-router'
-import { useCurrentUser } from '@/entities/session'
-import { LogoutButton } from '@/features/auth'
 import { DataBackup } from '@/features/data-backup'
-import { SyncStatus } from '@/features/sync'
+import { AccountPanel } from '@/widgets/account'
 import { ProfileOverview } from '@/widgets/profile-overview'
 import { ROUTES } from '@/shared/config'
 import { buttonStyles } from '@/shared/ui'
@@ -22,14 +20,7 @@ export const ProfilePage = () => (
     </section>
     <section className="flex flex-col gap-3 border-t border-border pt-6">
       <h2 className="text-lg font-semibold">Аккаунт</h2>
-      <AccountEmail />
-      <SyncStatus />
-      <LogoutButton />
+      <AccountPanel />
     </section>
   </main>
 )
-
-const AccountEmail = () => {
-  const user = useCurrentUser()
-  return <p className="break-all text-text-muted">{user?.email}</p>
-}

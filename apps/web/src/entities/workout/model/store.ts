@@ -24,6 +24,8 @@ type WorkoutActions = {
   addExerciseToWorkout: (workoutId: string, entry: WorkoutEntry) => void
   /** Records from the server, merged last-write-wins; `updatedAt` is kept as is. */
   applyRemoteWorkouts: (workouts: Workout[]) => void
+  /** Points entries to other exercises (old id → new id), e.g. after merging duplicates. */
+  replaceExerciseIds: (replacements: Record<string, string>) => void
 }
 
 export type WorkoutStore = WorkoutState & WorkoutActions
@@ -55,6 +57,24 @@ export const useWorkoutStore = create<WorkoutStore>()(
         })),
       applyRemoteWorkouts: (workouts) =>
         set((state) => ({ workouts: mergeRemote(state.workouts, workouts) })),
+      replaceExerciseIds: (replacements) =>
+        set((state) => {
+          const now = nowIso()
+          return {
+            workouts: state.workouts.map((workout) =>
+              workout.entries.some((entry) => Object.hasOwn(replacements, entry.exerciseId))
+                ? {
+                    ...workout,
+                    entries: workout.entries.map((entry) => ({
+                      ...entry,
+                      exerciseId: replacements[entry.exerciseId] ?? entry.exerciseId,
+                    })),
+                    updatedAt: now,
+                  }
+                : workout,
+            ),
+          }
+        }),
     }),
     {
       name: STORAGE_KEY,

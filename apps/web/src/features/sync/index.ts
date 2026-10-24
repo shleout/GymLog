@@ -1,2 +1,6 @@
+export { ForeignDataPrompt } from './ui/ForeignDataPrompt'
 export { SyncStatus } from './ui/SyncStatus'
 export { requestSync, startSync } from './model/syncEngine'
+export { useForeignDataOwner } from './model/foreignData'
+export { clearLocalData } from './model/localData'
+export { usePendingCount } from './model/usePendingCount'
