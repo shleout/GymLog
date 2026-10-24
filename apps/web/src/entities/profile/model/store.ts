@@ -1,0 +1,40 @@
+import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
+import { backupCorrupted, createPersistStorage, nowIso, pickPersistedField } from '@/shared/lib'
+import { migrateProfileState, PROFILE_STATE_VERSION } from './migrations'
+import { ProfileSchema } from './schemas'
+import type { ProfileInput, ProfileState } from './types'
+
+const STORAGE_KEY = 'gymlog-profile'
+
+type ProfileActions = {
+  updateProfile: (profile: ProfileInput) => void
+}
+
+export type ProfileStore = ProfileState & ProfileActions
+
+export const useProfileStore = create<ProfileStore>()(
+  persist(
+    (set): ProfileStore => ({
+      profile: { nickname: '', updatedAt: null },
+      updateProfile: (profile) => set({ profile: { ...profile, updatedAt: nowIso() } }),
+    }),
+    {
+      name: STORAGE_KEY,
+      version: PROFILE_STATE_VERSION,
+      storage: createPersistStorage(),
+      migrate: migrateProfileState,
+      // Validation happens here, after migrate.
+      merge: (persisted, current) => {
+        const profile = pickPersistedField(persisted, 'profile')
+        if (profile === undefined) return current
+        const result = ProfileSchema.safeParse(profile)
+        if (result.success) return { ...current, profile: result.data }
+        console.warn(`[storage] Invalid profile in "${STORAGE_KEY}", moved to backup`)
+        backupCorrupted(STORAGE_KEY, profile)
+        return current
+      },
+      partialize: (state): ProfileState => ({ profile: state.profile }),
+    },
+  ),
+)
