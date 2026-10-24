@@ -1,5 +1,5 @@
 import { useId, type FormEvent } from 'react'
-import { Button, Input } from '@/shared/ui'
+import { Button, Input, RestoredDraftNotice } from '@/shared/ui'
 import { useMeasurementForm } from '../model/useMeasurementForm'
 import { PreviousValue } from './PreviousValue'
 import { ValueInput } from './ValueInput'
@@ -19,6 +19,10 @@ export const MeasurementForm = ({ onSuccess }: MeasurementFormProps) => {
 
   return (
     <form noValidate className="flex flex-col gap-4" onSubmit={handleSubmit}>
+      {form.restored && (
+        <RestoredDraftNotice savedAt={form.restored.savedAt} onDiscard={form.startOver} />
+      )}
+
       <div className="flex flex-col gap-1">
         <label htmlFor={dateId} className="text-sm font-medium text-text-muted">
           Дата

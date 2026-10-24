@@ -1,7 +1,7 @@
 import { useId, useMemo, type FormEvent } from 'react'
 import { useExerciseStore } from '@/entities/exercise'
 import type { Workout } from '@/entities/workout'
-import { Button, Input } from '@/shared/ui'
+import { Button, Input, RestoredDraftNotice } from '@/shared/ui'
 import { useWorkoutForm } from '../model/useWorkoutForm'
 import { ExerciseEntryCard } from './ExerciseEntryCard'
 
@@ -25,6 +25,18 @@ export const WorkoutForm = ({ workout, onSuccess }: WorkoutFormProps) => {
 
   return (
     <form noValidate className="flex flex-col gap-4" onSubmit={handleSubmit}>
+      {form.restored && (
+        <RestoredDraftNotice
+          savedAt={form.restored.savedAt}
+          warning={
+            form.changedSinceDraft
+              ? 'Тренировка изменилась с начала редактирования (возможно, на другом устройстве). Сохранение черновика перезапишет эти изменения.'
+              : undefined
+          }
+          onDiscard={form.startOver}
+        />
+      )}
+
       <div className="flex flex-col gap-1">
         <label htmlFor={dateId} className="text-sm font-medium text-text-muted">
           Дата

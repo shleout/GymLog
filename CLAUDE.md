@@ -150,6 +150,13 @@
   затем меньший id), тренировки переписываются на него, остальные — мягко удаляются. Записи с сервера — через applyRemote* в сторах entities
   (mergeRemote / isNewer из shared/lib/lww.ts, LWW по updatedAt, updatedAt не трогают);
   из pull валидируются по одной (restoreItems), битые — в `gymlog-sync-pull:corrupted`.
+- Черновики форм переживают перезагрузку — shared/lib/usePersistentDraft.ts (localStorage
+  `gymlog-draft:<key>`, сохранение через 300 мс и сразу при уходе в фон/pagehide; нетронутый
+  черновик не пишется; clear() после сохранения, discard() — «Начать заново»). Ключи и
+  zod-схемы черновиков — features/{workout-form,add-measurement}/model/draftStorage.ts
+  (`workout:new`, `workout:<id>`, `measurement:new`). Плашка — shared/ui RestoredDraftNotice;
+  при редактировании предупреждает, если тренировка изменилась после начала правки (base).
+  Кнопки «Продолжить тренировку / замеры» на списках — useHasNewWorkoutDraft / useHasMeasurementDraft.
 - Генерация id — shared/lib/createId.ts (не crypto.randomUUID напрямую:
   он недоступен по http с телефона; запасной путь — UUID v4 из getRandomValues).
 - Общие UI-компоненты — shared/ui (Button, Input, Combobox, ConfirmAction —

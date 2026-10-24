@@ -2,7 +2,8 @@ import { format, parseISO } from 'date-fns'
 import { useMemo, useState } from 'react'
 import { useExerciseStore, type Exercise } from '@/entities/exercise'
 import { useWorkoutStore, type Workout, type WorkoutInput } from '@/entities/workout'
-import { collectErrors, createId } from '@/shared/lib'
+import { collectErrors, createId, usePersistentDraft } from '@/shared/lib'
+import { WorkoutDraftSchema, workoutDraftKey } from './draftStorage'
 import { WorkoutFormSchema } from './formSchema'
 import type { EntryDraft, FormErrors, SetDraft, WorkoutDraft } from './types'
 
@@ -39,14 +40,19 @@ const workoutToDraft = (workout: Workout, exercises: Exercise[]): WorkoutDraft =
 
 /**
  * Form state for creating a workout or, when `workout` is passed, editing it.
+ * The draft survives reloads (see usePersistentDraft) until the workout is saved.
  */
 export const useWorkoutForm = (workout?: Workout) => {
   const [today] = useState(getToday)
-  const [draft, setDraft] = useState<WorkoutDraft>(() =>
-    workout
-      ? workoutToDraft(workout, useExerciseStore.getState().exercises)
-      : { date: today, entries: [createEntryDraft()] },
-  )
+  const { draft, setDraft, restored, clear, discard } = usePersistentDraft<WorkoutDraft>({
+    key: workoutDraftKey(workout?.id),
+    schema: WorkoutDraftSchema,
+    create: () =>
+      workout
+        ? workoutToDraft(workout, useExerciseStore.getState().exercises)
+        : { date: today, entries: [createEntryDraft()] },
+    base: workout?.updatedAt ?? null,
+  })
   // Errors are shown only after the first submit attempt, then revalidated on every change.
   const [submitted, setSubmitted] = useState(false)
 
@@ -135,12 +141,26 @@ export const useWorkoutForm = (workout?: Workout) => {
 
     if (workout) updateWorkout(saved)
     else addWorkout(saved)
+    clear()
     return saved.id
   }
+
+  const startOver = () => {
+    setSubmitted(false)
+    discard()
+  }
+
+  /** Restored edit draft, but the workout has been saved since (e.g. on another device). */
+  const changedSinceDraft = Boolean(
+    restored && workout && restored.base !== null && restored.base !== workout.updatedAt,
+  )
 
   return {
     today,
     draft,
+    restored,
+    changedSinceDraft,
+    startOver,
     errors,
     setDate,
     addEntry,

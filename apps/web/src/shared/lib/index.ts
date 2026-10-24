@@ -9,6 +9,7 @@ export {
 export { collectErrors, parseDecimal, type FormErrors } from './form'
 export { formatDiff, formatNumber } from './formatNumber'
 export { isNewer, mergeRemote } from './lww'
+export { hasDraft, usePersistentDraft, type DraftInfo } from './usePersistentDraft'
 export { cleanName, normalizeName } from './normalizeName'
 export {
   backupCorrupted,

@@ -9,19 +9,25 @@ import {
   collectErrors,
   createId,
   getTodayInputValue,
+  usePersistentDraft,
   type FormErrors,
 } from '@/shared/lib'
+import { MEASUREMENT_DRAFT_KEY, MeasurementDraftSchema } from './draftStorage'
 import { MeasurementFormSchema } from './formSchema'
 import type { MeasurementDraft, PartDraft } from './types'
 
 const createPartDraft = (): PartDraft => ({ key: createId(), name: '', value: '', known: false })
 
+/** The draft survives reloads (see usePersistentDraft) until the measurements are saved. */
 export const useMeasurementForm = () => {
   const addMeasurement = useMeasurementStore((state) => state.addMeasurement)
   // Snapshot of previous sessions taken once: hints must not change while the form is open.
   const [latest] = useState(() => getLatestMeasurements(selectActiveMeasurements(useMeasurementStore.getState())))
   const [today] = useState(getTodayInputValue)
-  const [draft, setDraft] = useState<MeasurementDraft>(() => ({
+  const { draft, setDraft, restored, clear, discard } = usePersistentDraft<MeasurementDraft>({
+    key: MEASUREMENT_DRAFT_KEY,
+    schema: MeasurementDraftSchema,
+    create: () => ({
     date: today,
     weight: '',
     parts:
@@ -34,7 +40,8 @@ export const useMeasurementForm = () => {
             previous: { value: part.value, date: part.date },
           }))
         : [createPartDraft()],
-  }))
+    }),
+  })
   const [submitted, setSubmitted] = useState(false)
 
   const errors = useMemo<FormErrors>(() => {
@@ -74,13 +81,21 @@ export const useMeasurementForm = () => {
           : [],
       ),
     })
+    clear()
     return true
+  }
+
+  const startOver = () => {
+    setSubmitted(false)
+    discard()
   }
 
   return {
     today,
     previousWeight: latest.weight,
     draft,
+    restored,
+    startOver,
     errors,
     setDate,
     setWeight,
