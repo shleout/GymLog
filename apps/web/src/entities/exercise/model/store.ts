@@ -106,3 +106,8 @@ export const selectActiveExercises = (state: ExerciseState): Exercise[] =>
 
 /** Exercises that are not deleted. `useShallow` keeps the filtered array referentially stable. */
 export const useExercises = (): Exercise[] => useExerciseStore(useShallow(selectActiveExercises))
+
+export const useExerciseById = (id: string | undefined): Exercise | undefined =>
+  useExerciseStore((state) =>
+    state.exercises.find((exercise) => exercise.id === id && exercise.deletedAt === null),
+  )

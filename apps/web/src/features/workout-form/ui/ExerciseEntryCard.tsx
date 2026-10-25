@@ -1,11 +1,16 @@
 import { normalizeExerciseName } from '@/entities/exercise'
 import { Button, Combobox } from '@/shared/ui'
 import type { EntryDraft, FormErrors } from '../model/types'
+import { useExerciseHint } from '../model/useExerciseHint'
+import { ExerciseHint } from './ExerciseHint'
 import { SetRow } from './SetRow'
 
 type ExerciseEntryCardProps = {
   index: number
   entry: EntryDraft
+  /** Workout date and id (when editing): the hint looks only at earlier, other workouts. */
+  date: string
+  workoutId?: string
   errors: FormErrors
   exerciseOptions: string[]
   canRemove: boolean
@@ -19,6 +24,8 @@ type ExerciseEntryCardProps = {
 export const ExerciseEntryCard = ({
   index,
   entry,
+  date,
+  workoutId,
   errors,
   exerciseOptions,
   canRemove,
@@ -31,6 +38,7 @@ export const ExerciseEntryCard = ({
   const path = `entries.${index}`
   const nameError = errors[`${path}.name`]
   const setsError = errors[`${path}.sets`]
+  const hint = useExerciseHint({ name: entry.name, sets: entry.sets, date, workoutId })
 
   return (
     <section className="flex flex-col gap-3 rounded-2xl bg-surface-muted p-4">
@@ -58,6 +66,8 @@ export const ExerciseEntryCard = ({
           </Button>
         )}
       </div>
+
+      {hint && <ExerciseHint hint={hint} />}
 
       <div className="grid grid-cols-[2rem_1fr_1fr_2.75rem] gap-2 text-xs font-medium uppercase text-text-muted">
         <span className="text-center">#</span>

@@ -57,6 +57,8 @@ export const WorkoutForm = ({ workout, onSuccess }: WorkoutFormProps) => {
           key={entry.key}
           index={index}
           entry={entry}
+          date={form.draft.date}
+          workoutId={workout?.id}
           errors={form.errors}
           exerciseOptions={exerciseOptions}
           canRemove={form.draft.entries.length > 1}

@@ -3,6 +3,7 @@ import { AddMeasurementPage } from '@/pages/add-measurement'
 import { AddWorkoutPage } from '@/pages/add-workout'
 import { EditProfilePage } from '@/pages/edit-profile'
 import { EditWorkoutPage } from '@/pages/edit-workout'
+import { ExerciseDetailsPage } from '@/pages/exercise-details'
 import { ExercisesPage } from '@/pages/exercises'
 import { LoginPage } from '@/pages/login'
 import { MeasurementDetailsPage } from '@/pages/measurement-details'
@@ -27,6 +28,7 @@ export const router = createBrowserRouter([
         children: [
           { path: ROUTES.home, element: <WorkoutHistoryPage /> },
           { path: ROUTES.measurements, element: <MeasurementsPage /> },
+          { path: ROUTES.exercises, element: <ExercisesPage /> },
           { path: ROUTES.profile, element: <ProfilePage /> },
           { path: '*', element: <WorkoutHistoryPage /> },
         ],
@@ -35,7 +37,7 @@ export const router = createBrowserRouter([
       { path: ROUTES.workout, element: <WorkoutDetailsPage /> },
       { path: ROUTES.editWorkout, element: <EditWorkoutPage /> },
       { path: ROUTES.editProfile, element: <EditProfilePage /> },
-      { path: ROUTES.exercises, element: <ExercisesPage /> },
+      { path: ROUTES.exercise, element: <ExerciseDetailsPage /> },
       { path: ROUTES.addMeasurement, element: <AddMeasurementPage /> },
       { path: ROUTES.measurement, element: <MeasurementDetailsPage /> },
     ],

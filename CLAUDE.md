@@ -75,7 +75,7 @@
 - Хелперы форм — shared/lib: form.ts (parseDecimal, collectErrors, FormErrors),
   dateInput.ts (`<input type="date">` ↔ ISO), normalizeName.ts, formatNumber.ts (ru-RU).
 - Общие UI — shared/ui (Button, Input, PasswordInput — с «глазиком», Combobox, ConfirmAction — двухшаговое удаление,
-  buttonStyles для Link, RestoredDraftNotice).
+  buttonStyles для Link, RestoredDraftNotice, Chip, SegmentedControl, LineChart).
 - Форма тренировки — features/workout-form (WorkoutForm: без workout — создание,
   с workout — редактирование).
 - Последние/предыдущие значения замеров — entities/measurement/lib/getLatestMeasurements.ts
@@ -83,10 +83,17 @@
 - Нижний таб-бар (widgets/nav-bar) — только на верхнеуровневых страницах, вложенных в
   layout-роут app/ui/TabLayout.tsx. Формы и страницы просмотра (с «←») — вне него.
 - Вход обязателен (гарды в app/ui/AuthGuard.tsx), единственная публичная страница — /login.
-- Справочник упражнений — pages/exercises (/profile/exercises, вход из Профиля): добавление,
-  переименование, удаление. Проверка имени — entities/exercise/lib/validateExerciseName.ts.
-  Когда появится exercise-history, страницу планируется сделать четвёртым табом.
-- Ещё не создано: widgets/exercise-history (история по упражнению).
+- Справочник упражнений — pages/exercises (/exercises, четвёртый таб): добавление и список-навигация.
+  Страница упражнения — pages/exercise-details (/exercises/:id, меню «⋯» — переименование,
+  удаление) + widgets/exercise-history (сводка, График | Рекорды | История). Проверка имени —
+  entities/exercise/lib/validateExerciseName.ts.
+- Прогресс считается из тренировок, без хранимых полей — entities/workout/lib: getExerciseSessions,
+  getBestSet (лучший подход — по 1ПМ Эпли, подход на 1 повтор = сам вес; без веса — max reps),
+  getExerciseProgress (точки + подходы «на раз» — строго reps === 1), getRepRecords (подходы, не
+  побитые ни по весу, ни по повторам), getRepRecord (лучший вес на ≥ N повторов), getMaxRepsRecords
+  (без веса — рекорды повторов за подход), getRecentChange (лучшее за 3 мес vs раньше). Подсказка
+  «В прошлый раз / Рекорд на N» в форме — features/workout-form/model/useExerciseHint.ts.
+- График — свой SVG в shared/ui/LineChart.tsx (ось X по реальным датам), без библиотек.
 
 ## Правила кода
 - Только функциональные компоненты и хуки. Компоненты — в сегменте ui слайса.
