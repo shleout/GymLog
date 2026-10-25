@@ -74,6 +74,13 @@ entities/sync userId/userEmail. При входе:
   `<key>:corrupted`.
 - Миграции — model/migrations.ts каждого стора: *_STATE_VERSION и migrate* (цепочка
   `if (version < N)`).
+- Несколько вкладок: persist пишет всё состояние на каждый set, но сам не перечитывает его,
+  поэтому вкладка со старым стором затёрла бы чужие правки. syncPersistedStoresAcrossTabs
+  (shared/lib/storage.ts, вызывается в app/App.tsx) на событие `storage` делает
+  `persist.rehydrate()` нужного стора. Поэтому merge каждого стора должен применять и
+  «пустые» значения из хранилища (session: user = null — выход в другой вкладке).
+  initSession на смену сессии в другой вкладке сбрасывает access-токен в памяти: иначе
+  вкладка ходила бы в API с токеном прежнего аккаунта.
 
 ## Резервная копия
 

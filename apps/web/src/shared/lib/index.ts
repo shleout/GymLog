@@ -19,6 +19,7 @@ export {
   removeState,
   restoreItems,
   saveState,
+  syncPersistedStoresAcrossTabs,
 } from './storage'
 export {
   createSyncMeta,

@@ -52,6 +52,14 @@ export const initSession = (): void => {
     onRefreshed: ({ user }) => useSessionStore.getState().setUser(user),
     onExpired: endSession,
   })
+  // Another tab signed in or out: the access token in this tab's memory may belong to the
+  // previous user. Drop it; the next request refreshes by the shared cookie. A token refresh
+  // in another tab writes the same user, which changes nothing and fires no event.
+  window.addEventListener('storage', (event) => {
+    if (event.key === null || event.key === useSessionStore.persist.getOptions().name) {
+      setAccessToken(null)
+    }
+  })
   if (!useSessionStore.getState().user) return
   refreshSession().catch((error: unknown) => {
     if (isNetworkError(error)) return

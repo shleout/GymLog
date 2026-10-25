@@ -33,7 +33,9 @@ export const useSessionStore = create<SessionStore>()(
       // Validation happens here, after migrate.
       merge: (persisted, current) => {
         const user = pickPersistedField(persisted, 'user')
-        if (user === undefined || user === null) return current
+        if (user === undefined) return current
+        // Signed out in another tab (see syncPersistedStoresAcrossTabs).
+        if (user === null) return { ...current, user: null }
         const result = UserSchema.safeParse(user)
         if (result.success) return { ...current, user: result.data }
         console.warn(`[storage] Invalid user in "${STORAGE_KEY}", moved to backup`)

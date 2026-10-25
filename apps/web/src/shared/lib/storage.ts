@@ -79,6 +79,35 @@ export const createPersistStorage = (): PersistStorage<unknown> => ({
   removeItem: (name) => removeState(name),
 })
 
+/** The part of a zustand `persist` store API needed to follow other tabs. */
+type PersistedStore = {
+  persist: {
+    getOptions: () => { name?: string }
+    rehydrate: () => Promise<void> | void
+  }
+}
+
+/**
+ * Keeps persisted stores in sync between tabs. `persist` writes the whole state on every `set`
+ * but never re-reads it, so a tab with stale state would overwrite another tab's changes.
+ * The `storage` event fires only in OTHER tabs and only when the value really changed,
+ * so the re-write that `rehydrate` triggers does not ping-pong back.
+ * Returns the unsubscribe function.
+ */
+export const syncPersistedStoresAcrossTabs = (stores: PersistedStore[]): (() => void) => {
+  const handleStorage = (event: StorageEvent) => {
+    if (event.storageArea !== localStorage) return
+    for (const store of stores) {
+      // `key === null`: localStorage.clear() in another tab.
+      if (event.key === null || event.key === store.persist.getOptions().name) {
+        void store.persist.rehydrate()
+      }
+    }
+  }
+  window.addEventListener('storage', handleStorage)
+  return () => window.removeEventListener('storage', handleStorage)
+}
+
 const RecordSchema = z.record(z.string(), z.unknown())
 
 /** Reads a field of persisted state of unknown shape. */
