@@ -74,7 +74,7 @@
   paths — ссылки с id).
 - Хелперы форм — shared/lib: form.ts (parseDecimal, collectErrors, FormErrors),
   dateInput.ts (`<input type="date">` ↔ ISO), normalizeName.ts, formatNumber.ts (ru-RU).
-- Общие UI — shared/ui (Button, Input, Combobox, ConfirmAction — двухшаговое удаление,
+- Общие UI — shared/ui (Button, Input, PasswordInput — с «глазиком», Combobox, ConfirmAction — двухшаговое удаление,
   buttonStyles для Link, RestoredDraftNotice).
 - Форма тренировки — features/workout-form (WorkoutForm: без workout — создание,
   с workout — редактирование).

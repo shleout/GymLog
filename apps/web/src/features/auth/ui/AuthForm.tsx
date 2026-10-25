@@ -1,5 +1,5 @@
 import { useId, type FormEvent } from 'react'
-import { Button, Input } from '@/shared/ui'
+import { Button, Input, PasswordInput } from '@/shared/ui'
 import { useAuthForm, type AuthMode } from '../model/useAuthForm'
 
 type AuthFormProps = {
@@ -10,6 +10,7 @@ export const AuthForm = ({ mode }: AuthFormProps) => {
   const form = useAuthForm(mode)
   const emailId = useId()
   const passwordId = useId()
+  const passwordConfirmId = useId()
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -40,9 +41,8 @@ export const AuthForm = ({ mode }: AuthFormProps) => {
         <label htmlFor={passwordId} className="text-sm font-medium text-text-muted">
           Пароль
         </label>
-        <Input
+        <PasswordInput
           id={passwordId}
-          type="password"
           autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
           value={form.draft.password}
           invalid={Boolean(form.errors.password)}
@@ -50,6 +50,24 @@ export const AuthForm = ({ mode }: AuthFormProps) => {
         />
         {form.errors.password && <p className="text-sm text-danger">{form.errors.password}</p>}
       </div>
+
+      {mode === 'register' && (
+        <div className="flex flex-col gap-1">
+          <label htmlFor={passwordConfirmId} className="text-sm font-medium text-text-muted">
+            Повторите пароль
+          </label>
+          <PasswordInput
+            id={passwordConfirmId}
+            autoComplete="new-password"
+            value={form.draft.passwordConfirm}
+            invalid={Boolean(form.errors.passwordConfirm)}
+            onChange={(event) => form.setField('passwordConfirm', event.target.value)}
+          />
+          {form.errors.passwordConfirm && (
+            <p className="text-sm text-danger">{form.errors.passwordConfirm}</p>
+          )}
+        </div>
+      )}
 
       {form.errors.form && (
         <p role="alert" className="text-sm text-danger">
