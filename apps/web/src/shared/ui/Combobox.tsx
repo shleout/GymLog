@@ -146,7 +146,7 @@ export const Combobox = ({
       </button>
 
       {showPopup && (
-        <div className="absolute inset-x-0 top-full z-20 mt-1 overflow-hidden rounded-xl border border-border bg-white shadow-lg shadow-text/10">
+        <div className="absolute inset-x-0 top-full z-20 mt-1 overflow-hidden rounded-xl border border-border bg-surface-raised shadow-lg shadow-black/40">
           {visibleOptions.length > 0 ? (
             // At most 5 options are visible (option height 2.75rem + py-1), the rest scroll.
             <ul

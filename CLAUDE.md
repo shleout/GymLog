@@ -98,6 +98,11 @@
 ## Стиль
 - Tailwind v4, конфигурация через @theme в src/app/styles/index.css, без tailwind.config.js.
 - Без отдельных CSS-файлов и inline-стилей. Условные классы — cn() из shared/lib/cn.ts.
+- Тема тёмная (фиолетовая база, зелёный primary, фиолетовый accent). Цвета — только токены
+  из @theme (bg-surface-raised, а не bg-white). Шрифты — @fontsource-variable (Manrope —
+  font-sans, Unbounded — font-display для h1/h2), в precache — только latin и cyrillic.
+- Цвет PWA (theme_color в vite.config.ts и meta theme-color) = --color-surface. Иконки:
+  icon.svg + PNG в public/ — при смене цвета перегенерировать PNG.
 - Мобильный-first: удобно с телефона в зале. Тач-таргеты мин. 44px, контрастные кнопки.
 
 ## Команды (из корня)

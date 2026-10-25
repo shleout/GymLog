@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <!-- Full-bleed background: the OS applies its own mask (circle/squircle), so the icon is also "maskable". -->
-  <rect width="512" height="512" fill="#2f74e8"/>
+  <rect width="512" height="512" fill="#7c3aed"/>
   <!-- Dumbbell inside the maskable safe zone (central circle, 80% of the size). -->
   <g fill="#ffffff">
     <rect x="96" y="176" width="44" height="160" rx="14"/>

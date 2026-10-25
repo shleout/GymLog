@@ -81,7 +81,7 @@ export const ExerciseEntryCard = ({
       </ol>
       {setsError && <p className="text-sm text-danger">{setsError}</p>}
 
-      <Button variant="secondary" className="bg-white" onClick={onAddSet}>
+      <Button variant="secondary" className="bg-surface-raised" onClick={onAddSet}>
         + Подход
       </Button>
     </section>

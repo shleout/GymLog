@@ -1,7 +1,7 @@
 {
   "name": "@gymlog/web",
   "private": true,
-  "version": "2.0.0",
+  "version": "2.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,6 +12,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource-variable/manrope": "^5.3.0",
+    "@fontsource-variable/unbounded": "^5.3.0",
     "@gymlog/schemas": "^0.0.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",

@@ -103,7 +103,7 @@ export const MeasurementForm = ({ onSuccess }: MeasurementFormProps) => {
           )
         })}
 
-        <Button variant="secondary" className="bg-white" onClick={form.addPart}>
+        <Button variant="secondary" className="bg-surface-raised" onClick={form.addPart}>
           + Другой замер
         </Button>
       </section>

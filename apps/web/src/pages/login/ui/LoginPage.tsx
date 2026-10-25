@@ -25,7 +25,7 @@ export const LoginPage = () => {
             aria-pressed={mode === item.mode}
             className={cn(
               'min-h-11 rounded-lg font-semibold text-text-muted transition-colors',
-              mode === item.mode && 'bg-white text-text shadow-sm',
+              mode === item.mode && 'bg-surface-raised text-text shadow-sm',
             )}
             onClick={() => setMode(item.mode)}
           >
