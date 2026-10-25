@@ -2,7 +2,7 @@ import { Link } from 'react-router'
 import { DataBackup } from '@/features/data-backup'
 import { AccountPanel } from '@/widgets/account'
 import { ProfileOverview } from '@/widgets/profile-overview'
-import { ROUTES } from '@/shared/config'
+import { APP_VERSION, ROUTES } from '@/shared/config'
 import { buttonStyles } from '@/shared/ui'
 
 export const ProfilePage = () => (
@@ -22,5 +22,6 @@ export const ProfilePage = () => (
       <h2 className="text-lg font-semibold">Аккаунт</h2>
       <AccountPanel />
     </section>
+    <p className="text-center text-sm text-text-muted">version {APP_VERSION}</p>
   </main>
 )

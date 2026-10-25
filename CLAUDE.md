@@ -2,229 +2,109 @@
 
 Пет-проект: тренировочный дневник для тренажёрного зала. Пользователь
 записывает подходы (упражнение, вес, повторения), видит историю тренировок
-по дням и прогресс по каждому упражнению.
+по дням, прогресс по упражнениям и замеры тела. Local-first PWA с синхронизацией.
+
+Подробности синхронизации, auth, бэкенда, persist, бэкапа и черновиков —
+**docs/sync.md**. Читать перед работой с этими темами.
 
 ## Стек
-- React 18 + TypeScript (strict mode)
-- Vite
-- Zustand для глобального состояния + persist в localStorage
-- zod для валидации данных (в т.ч. при чтении из localStorage)
-- Tailwind CSS v4 для стилей
-- date-fns для работы с датами
-- react-router v7 для маршрутизации (createBrowserRouter, Link, useNavigate)
-- vite-plugin-pwa (Workbox): manifest, service worker, офлайн-запуск
-- Node 22 (см. .nvmrc), перед npm-командами — `nvm use`
+- React 18 + TypeScript (strict), Vite, Tailwind CSS v4, react-router v7
+  (createBrowserRouter, Link, useNavigate), date-fns.
+- Zustand + persist в localStorage, zod для валидации (в т.ч. при чтении из localStorage).
+- vite-plugin-pwa (Workbox): manifest, service worker, офлайн-запуск.
+- Бэкенд — NestJS 12 + Prisma 7 + Postgres (apps/api).
+- Node 22 (.nvmrc), перед npm-командами — `nvm use`.
 
 ## Репозиторий (монорепо, npm workspaces)
-- apps/web — фронтенд (это приложение). Все пути `src/...` ниже — внутри apps/web.
-- apps/api — бэкенд на NestJS (см. раздел «Бэкенд»).
-- packages/schemas (@gymlog/schemas) — общие zod-схемы записей (Workout, Exercise,
-  Measurement, Profile, SyncMeta) и контракты API (auth, sync push/pull). Собирается
-  tsc в dist (ESM + .d.ts) — в postinstall корня и в prebuild фронта; при правке схем
-  держать запущенным `npm run dev:schemas`. entities/*/model/schemas.ts реэкспортируют
-  схемы записей отсюда; *StateSchema (форма данных в localStorage) — только во фронте.
-- Один package-lock.json и node_modules в корне. Зависимость ставится в
-  конкретный workspace: `npm i <pkg> -w @gymlog/web`.
-- Деплой фронта — Vercel, Root Directory = apps/web, конфиг apps/web/vercel.json
-  (rewrite всех путей на index.html для SPA, immutable-кеш для /assets).
-- Деплой API — Render (render.yaml, Blueprint), БД — Neon.
-- CI — .github/workflows/ci.yml: npm ci, typecheck, lint, build (schemas, api, web).
-- План вывода в прод и синхронизации — итерации: 1) деплой, схема v1, PWA,
-  бэкап; 2) NestJS API (Prisma, Postgres, email+пароль, JWT); 3) синхронизация
-  на фронте (local-first: outbox, push/pull, last-write-wins по updatedAt).
-
-## Бэкенд (apps/api)
-- NestJS 12, ESM ("type": "module", относительные импорты с `.js`). Сборка — tsc
-  (без Nest CLI: на Node 22.12 он падает на require(esm)); dev — tsc --watch + node --watch.
-- Prisma 7: prisma/schema.prisma, prisma.config.ts (URL БД; DIRECT_URL — для миграций
-  в обход пулера Neon), клиент генерируется в src/generated (в .gitignore, postinstall),
-  подключение — через драйвер-адаптер @prisma/adapter-pg.
-- Локальная БД — compose.yaml в корне, Postgres на порту 5434. Переменные — apps/api/.env
-  (шаблон .env.example), валидируются zod в src/config/env.ts (getEnv).
-- Все маршруты под /api. Фронт ходит в API на своём origin через прокси (Vite в dev —
-  server.proxy на localhost:3000, rewrite Vercel в проде) — поэтому без CORS и с SameSite=Strict cookie.
-- Валидация входа — ZodValidationPipe со схемами из @gymlog/schemas (не class-validator).
-- Auth (src/auth): email + пароль (argon2). Access JWT 15 мин в теле ответа, refresh —
-  случайный токен в httpOnly cookie (path /api/auth), в БД — его SHA-256, ротация при
-  каждом /auth/refresh. Глобальный AuthGuard: всё закрыто, кроме @Public().
-- Sync (src/sync): POST /sync/push — записи валидируются по одной (невалидные →
-  rejected, остальные пишутся), last-write-wins по клиентскому updatedAt (равный — skip).
-  GET /sync/pull?cursor= — изменения после ревизии постранично (SYNC_BATCH_LIMIT, hasMore).
-  revision — счётчик на пользователя (User.revision), выдаётся под блокировкой строки
-  пользователя (FOR UPDATE), pull читает все таблицы в одном снапшоте (RepeatableRead).
-- Ключ синхронизируемых таблиц — (userId, id): id приходят с клиента.
+- apps/web — фронтенд. Все пути `src/...` ниже — внутри apps/web.
+- apps/api — бэкенд (ESM, импорты с `.js`, сборка tsc без Nest CLI). Все маршруты под /api,
+  фронт ходит через прокси на своём origin (без CORS). Валидация — ZodValidationPipe.
+- packages/schemas (@gymlog/schemas) — общие zod-схемы записей и контракты API. Собирается
+  tsc в dist — при правке схем держать запущенным `npm run dev:schemas`.
+  entities/*/model/schemas.ts реэкспортируют схемы отсюда; *StateSchema — только во фронте.
+- Один package-lock.json в корне. Зависимость — в конкретный workspace:
+  `npm i <pkg> -w @gymlog/web`.
+- Деплой: фронт — Vercel (Root Directory = apps/web, apps/web/vercel.json), API — Render
+  (render.yaml), БД — Neon. CI — .github/workflows/ci.yml (typecheck, lint, build).
+- Версия приложения — `version` в apps/web/package.json (единственный источник), APP_VERSION
+  в shared/config/version.ts, подпись внизу страницы профиля. После смены версии —
+  `npm install --package-lock-only --ignore-scripts`.
 
 ## Архитектура фронта: Feature-Sliced Design
 - Слои (сверху вниз): app → pages → widgets → features → entities → shared.
-- Импорт разрешён только из слоёв СТРОГО НИЖЕ. Импорт внутри одного слоя
-  между разными слайсами запрещён.
-- app и shared не содержат слайсов, только сегменты (ui, lib, config, api).
-- Остальные слои содержат слайсы, каждый слайс обязан иметь index.ts (Public API).
-- Импорт из другого слайса — ТОЛЬКО через его index.ts. Глубокие импорты запрещены.
-- Сегменты внутри слайса: ui (компоненты), model (типы, zod-схемы, стор), api, lib.
-- Импорты между слоями — через алиас `@/` (`@/entities/workout`), внутри
-  слайса — относительные пути.
+- Импорт разрешён только из слоёв СТРОГО НИЖЕ. Импорт между слайсами одного слоя запрещён.
+- app и shared — без слайсов, только сегменты (ui, lib, config, api).
+- Каждый слайс имеет index.ts (Public API); из другого слайса — только через него.
+- Сегменты слайса: ui (компоненты), model (типы, zod-схемы, стор), api, lib.
+- Между слоями — алиас `@/` (`@/entities/workout`), внутри слайса — относительные пути.
 
-## Доменная модель (тренировочный дневник)
-- Exercise: id, name, muscleGroup? (необязательно).
-- Set: id, weight? (кг, number, шаг 0.5, необязательно), reps (number), completed (boolean).
-- WorkoutEntry: exerciseId, sets: Set[].
-- Workout: id, date (ISO string), entries: WorkoutEntry[].
+## Доменная модель
+- Exercise: id, name, muscleGroup?.
+- Set: id, weight? (кг, шаг 0.5), reps, completed. Живёт в entities/workout/model.
+- WorkoutEntry: exerciseId, sets: Set[]. Workout: id, date (ISO), entries.
 - Правила: weight (если указан) > 0, reps — целое > 0, date не в будущем.
-- weight — рабочий или дополнительный вес (блины на поясе при подтягиваниях);
-  для упражнений с собственным весом не указывается.
-- Упражнения вводятся свободным текстом и сохраняются в справочник
-  (ensureExercise). Имена сравниваются без учёта регистра, лишних пробелов
-  и ё/е (normalizeName из shared/lib), чтобы не плодить дубли.
-- Set пока живёт в entities/workout/model (отдельного слайса entities/set нет).
+- weight — рабочий или дополнительный вес; для упражнений с собственным весом не указывается.
+- Упражнения вводятся свободным текстом и сохраняются в справочник (ensureExercise).
+  Имена сравниваются через normalizeName (регистр, пробелы, ё/е), чтобы не плодить дубли.
 - Profile: nickname, height? (см, 50–272).
-- Measurement (сессия замеров): id, date (ISO, не в будущем), weight? (вес
-  тела, кг, 20–400, точность 0.1), values: { name, value (см, точность 0.1) }[].
-  Вес тела хранится только в замерах (не в профиле): актуальный вес — из
-  последнего замера с весом, так сохраняется история.
-- Части тела — свободный ввод, сопоставляются между сессиями по normalizeName.
-  Все когда-либо замеренные части подставляются строками в новую форму
-  с подсказкой предыдущего значения и даты; пустые строки не сохраняются.
+- Measurement (сессия замеров): id, date (ISO, не в будущем), weight? (вес тела, кг, 20–400,
+  точность 0.1), values: { name, value (см, точность 0.1) }[].
+- Вес тела — только в замерах, не в профиле: актуальный вес — из последнего замера с весом.
+- Части тела — свободный ввод, сопоставляются по normalizeName. Все ранее замеренные части
+  подставляются в новую форму с подсказкой прошлого значения; пустые строки не сохраняются.
 
-## Данные и синхронизация (схема v1)
-- Workout, Measurement, Exercise несут поля синхронизации createdAt, updatedAt,
-  deletedAt (ISO, deletedAt — nullable). Profile несёт updatedAt (nullable).
-  Схема — SyncMetaSchema в packages/schemas (во фронте реэкспорт из shared/lib/syncMeta.ts
-  вместе с createSyncMeta).
-- id генерируются на клиенте (createId → UUID v4), в том числе офлайн.
-- Экшены принимают данные без мета-полей (WorkoutInput, MeasurementInput,
-  ProfileInput) и сами ставят createdAt/updatedAt — фичи их не трогают.
-- Удаление — только мягкое (deletedAt). Удалённые записи остаются в сторе
-  как tombstone для синхронизации. Компоненты читают только активные записи:
-  useWorkouts / useMeasurements / useWorkoutById / useMeasurementById /
-  selectActive*. Читать state.workouts / state.measurements в UI нельзя.
-- persist версионирован: у каждого стора *_STATE_VERSION и migrate* в
-  model/migrations.ts (цепочка шагов `if (version < N)`). Любое изменение формы
-  данных = +1 к версии + шаг миграции. Без этого данные пользователя пропадут.
-- Хранилище (createPersistStorage) проверяет только конверт { state, version };
-  zod-валидация — в merge, после migrate, по каждой записи отдельно
-  (restoreItems). Невалидное не удаляется, а уходит в `<key>:corrupted`.
-- Резервная копия — features/data-backup (экспорт/импорт JSON, BackupSchema
-  с BACKUP_VERSION; импорт заменяет все данные после подтверждения). Импорт побеждает
-  сервер: всем записям из файла ставится updatedAt = now, а записи, которых нет в файле,
-  становятся tombstone — так замена доходит до аккаунта и других устройств.
+## Данные и синхронизация — ключевые правила
+- Workout, Measurement, Exercise несут createdAt, updatedAt, deletedAt (nullable);
+  Profile — updatedAt (nullable). SyncMetaSchema / createSyncMeta — shared/lib/syncMeta.ts.
+- id генерируются на клиенте — только через shared/lib/createId.ts (crypto.randomUUID
+  недоступен по http с телефона).
+- Экшены принимают данные без мета-полей (WorkoutInput и т.п.) и сами ставят
+  createdAt/updatedAt — фичи их не трогают.
+- Удаление — только мягкое (deletedAt), tombstone остаются в сторе для синхронизации.
+  UI читает только активные записи: useWorkouts / useMeasurements / useWorkoutById /
+  useMeasurementById / selectActive*. Читать state.workouts / state.measurements в UI нельзя.
+- Записи с сервера — только через applyRemote* в сторах (LWW по updatedAt).
+- persist версионирован: любое изменение формы данных = +1 к *_STATE_VERSION + шаг в
+  model/migrations.ts. Без этого данные пользователя пропадут.
+- Сортировка «новые сверху» — только sortWorkoutsDesc / sortMeasurementsDesc (дата с
+  точностью до дня, дальше решает createdAt, затем позиция в сторе).
 
-## Где что лежит
-- Роутер — app/router/router.tsx; пути страниц — shared/config/routes.ts
-  (ROUTES — шаблоны для роутера, paths — построение ссылок с id).
-- Zustand-стор тренировок — entities/workout/model/store.ts.
-- Zustand-стор справочника упражнений — entities/exercise/model/store.ts.
-- Zustand-сторы профиля и замеров — entities/{profile,measurement}/model/store.ts.
-- Последние и предыдущие значения веса и каждой части тела —
-  entities/measurement/lib/getLatestMeasurements.ts; значения, предшествующие
-  конкретной сессии, — entities/measurement/lib/getPreviousValues.ts.
-- Zod-схемы записей — packages/schemas/src, во фронте импортируются через
-  entities/{workout,exercise,profile,measurement}/model/schemas.ts (там же *StateSchema);
-  типы выводятся из схем через z.infer (model/types.ts).
+## Неочевидные места
+- Роутер — app/router/router.tsx; пути — shared/config/routes.ts (ROUTES — шаблоны,
+  paths — ссылки с id).
 - Хелперы форм — shared/lib: form.ts (parseDecimal, collectErrors, FormErrors),
-  dateInput.ts (значения `<input type="date">` ↔ ISO), normalizeName.ts
-  (normalizeName, cleanName), formatNumber.ts (числа в формате ru-RU).
-- Обёртка localStorage — shared/lib/storage.ts (loadState, saveState,
-  createPersistStorage, restoreItems, pickPersistedField, backupCorrupted).
-- HTTP-клиент — shared/api/client.ts: apiRequest (на 401 — refresh и повтор), publicRequest,
-  ApiError (status 0 — сервер недоступен: это не повод разлогинивать). Access-токен — только
-  в памяти модуля; refreshSession — single-flight (в вкладке общий промис, между вкладками
-  Web Lock), т.к. сервер ротирует refresh-токен и параллельный refresh получил бы 401.
-- Сессия — entities/session: стор (persist только user, без токенов), login/register/logout,
-  initSession (вызывается в app/App.tsx: слушатели refresh + фоновая проверка сессии).
-- Вход обязателен: гарды RequireAuth / RequireGuest в app/ui/AuthGuard.tsx. Приложение
-  открывается сразу по сохранённому user (в т.ч. офлайн); на /login выкидывает только 401
-  от refresh. Форма входа/регистрации — features/auth, страница — pages/login. Email, статус
-  синхронизации и выход (выбор: оставить данные / удалить) — widgets/account.
-- Синхронизация: стор entities/sync (cursor, synced, rejected, lastSyncedAt; status — не
-  персистится), движок features/sync/model/syncEngine.ts (startSync в app/App.tsx, requestSync).
-  Outbox не хранится, а вычисляется (features/sync/model/pending.ts): запись ждёт отправки,
-  если её updatedAt ≠ synced[`<entity>:<id>`] (профиль — ключ `profile`). Цикл: push → pull
-  (пока hasMore), single-flight. Триггеры: смена пользователя, правка в сторе (debounce 2 с),
-  online, возврат во вкладку, опрос раз в 2 мин, повтор с backoff.
-  Владелец локальных данных — entities/sync userId/userEmail. При входе: тот же userId —
-  продолжаем; null (данные до входа) или пустое устройство — resetForUser, всё уходит на
-  сервер; другой аккаунт с данными — синхронизация стоит, вместо приложения ForeignDataPrompt
-  (в RequireAuth): загрузить в этот аккаунт / удалить с устройства / выйти.
-  После pull — mergeDuplicateExercises: одно упражнение на normalizeName (раньше createdAt,
-  затем меньший id), тренировки переписываются на него, остальные — мягко удаляются. Записи с сервера — через applyRemote* в сторах entities
-  (mergeRemote / isNewer из shared/lib/lww.ts, LWW по updatedAt, updatedAt не трогают);
-  из pull валидируются по одной (restoreItems), битые — в `gymlog-sync-pull:corrupted`.
-- Черновики форм переживают перезагрузку — shared/lib/usePersistentDraft.ts (localStorage
-  `gymlog-draft:<key>`, сохранение через 300 мс и сразу при уходе в фон/pagehide; нетронутый
-  черновик не пишется; clear() после сохранения, discard() — «Начать заново»). Ключи и
-  zod-схемы черновиков — features/{workout-form,add-measurement}/model/draftStorage.ts
-  (`workout:new`, `workout:<id>`, `measurement:new`). Плашка — shared/ui RestoredDraftNotice;
-  при редактировании предупреждает, если тренировка изменилась после начала правки (base).
-  Кнопки «Продолжить тренировку / замеры» на списках — useHasNewWorkoutDraft / useHasMeasurementDraft.
-- Генерация id — shared/lib/createId.ts (не crypto.randomUUID напрямую:
-  он недоступен по http с телефона; запасной путь — UUID v4 из getRandomValues).
-- Общие UI-компоненты — shared/ui (Button, Input, Combobox, ConfirmAction —
-  двухшаговое подтверждение удаления, buttonStyles для Link).
-- Статистика тренировки (подходы, повторы, объём) — entities/workout/lib/getWorkoutStats.ts.
-- Сортировка «новые сверху» — только через sortWorkoutsDesc / sortMeasurementsDesc
-  из entities. Даты хранятся с точностью до дня, поэтому при одинаковой дате
-  порядок решает createdAt, затем позиция в массиве стора.
-- Форма создания и редактирования тренировки — features/workout-form
-  (WorkoutForm: без workout — создание, с workout — редактирование).
-  ui/ — компоненты, model/ — черновик формы, zod-схема формы
-  (переиспользует схемы entities), хук useWorkoutForm.
-- Удаление тренировки / сессии замеров (с подтверждением) —
-  features/delete-workout, features/delete-measurement.
-- Форма никнейма и роста — features/edit-profile.
-- Форма новых замеров — features/add-measurement.
-- Список тренировок — widgets/workout-list/ui/ (карточки — ссылки на просмотр).
-- Просмотр тренировки (readonly) — widgets/workout-details/ui/.
-- Нижний таб-бар (Тренировки / Замеры / Профиль) — widgets/nav-bar/ui/. Показывается
-  только на верхнеуровневых страницах: они вложены в layout-роут app/ui/TabLayout.tsx.
-  Формы и страницы просмотра (с кнопкой «←») живут вне него, без бара.
-- Профиль (никнейм, рост, актуальный вес — ссылка на замеры) — widgets/profile-overview/ui/.
-- Актуальные значения веса и частей тела с изменением — widgets/latest-measurements/ui/.
-- Список сессий замеров (карточки — ссылки на просмотр) — widgets/measurement-list/ui/.
-- Просмотр сессии замеров (с изменением к предыдущим значениям) —
-  widgets/measurement-details/ui/.
-- История по упражнению — widgets/exercise-history/ui/ (ещё не создан).
-- Страницы:
-  - pages/workout-history — `/`, список тренировок и будущие виджеты прогресса;
-  - pages/add-workout — `/workouts/new`;
-  - pages/workout-details — `/workouts/:workoutId`, просмотр;
-  - pages/edit-workout — `/workouts/:workoutId/edit`, редактирование и удаление;
-  - pages/measurements — `/measurements`, актуальные замеры и история сессий;
-  - pages/add-measurement — `/measurements/new`;
-  - pages/measurement-details — `/measurements/:measurementId`, просмотр и удаление;
-  - pages/profile — `/profile`, никнейм, рост, вес, экспорт/импорт данных;
-  - pages/edit-profile — `/profile/edit`;
-  - pages/login — `/login`, вход и регистрация (единственная страница без входа).
+  dateInput.ts (`<input type="date">` ↔ ISO), normalizeName.ts, formatNumber.ts (ru-RU).
+- Общие UI — shared/ui (Button, Input, Combobox, ConfirmAction — двухшаговое удаление,
+  buttonStyles для Link, RestoredDraftNotice).
+- Форма тренировки — features/workout-form (WorkoutForm: без workout — создание,
+  с workout — редактирование).
+- Последние/предыдущие значения замеров — entities/measurement/lib/getLatestMeasurements.ts
+  и getPreviousValues.ts. Статистика тренировки — entities/workout/lib/getWorkoutStats.ts.
+- Нижний таб-бар (widgets/nav-bar) — только на верхнеуровневых страницах, вложенных в
+  layout-роут app/ui/TabLayout.tsx. Формы и страницы просмотра (с «←») — вне него.
+- Вход обязателен (гарды в app/ui/AuthGuard.tsx), единственная публичная страница — /login.
+- Ещё не создано: widgets/exercise-history (история по упражнению).
 
 ## Правила кода
-- Только функциональные компоненты и хуки. Никаких class-компонентов.
-- Компоненты — в сегменте ui соответствующего слайса.
-- Хуки — в сегменте model или lib слайса, префикс use.
-- Глобальное состояние — только через Zustand-сторы в entities/*/model/store.ts.
-  useState — только для локального UI-состояния (открыт ли модал, текст в поле,
-  черновик формы до сохранения).
-- Никаких any. Если тип неизвестен — unknown + проверка через zod.
-- Экспорты — именованные, не default.
-- Все данные из localStorage проходят через zod-схему при чтении (после
-  миграции). Невалидные записи — в `<key>:corrupted` + console.warn, остальные
-  сохраняются; молча удалять данные пользователя нельзя.
+- Только функциональные компоненты и хуки. Компоненты — в сегменте ui слайса.
+- Хуки — в model или lib слайса, префикс use.
+- Глобальное состояние — только Zustand-сторы в entities/*/model/store.ts. useState — только
+  для локального UI-состояния (модал, текст в поле, черновик формы).
+- Никаких any: неизвестное — unknown + проверка через zod.
+- Только именованные экспорты.
+- Данные из localStorage проходят zod-схему после миграции. Невалидные записи — в
+  `<key>:corrupted` + console.warn, остальные сохраняются; молча удалять данные нельзя.
 
 ## Стиль
-- Tailwind v4. Конфигурация через @theme в src/app/styles/index.css,
-  без tailwind.config.js.
-- Без отдельных CSS-файлов и inline-стилей.
-- Мобильный-first: интерфейс удобен с телефона в зале.
-- Крупные тач-таргеты (мин. 44px), контрастные кнопки.
-- Для условных классов использовать cn() из shared/lib/cn.ts (clsx + tailwind-merge).
+- Tailwind v4, конфигурация через @theme в src/app/styles/index.css, без tailwind.config.js.
+- Без отдельных CSS-файлов и inline-стилей. Условные классы — cn() из shared/lib/cn.ts.
+- Мобильный-first: удобно с телефона в зале. Тач-таргеты мин. 44px, контрастные кнопки.
 
-## Команды (из корня репозитория)
-- npm run dev — запуск фронта
-- npm run db:up / db:down — локальный Postgres в Docker
-- npm run dev:api — запуск API (нужны db:up и apps/api/.env)
-- npm run db:migrate -w @gymlog/api — новая миграция после правки schema.prisma
-- npm run build — сборка schemas, api и фронта (включая sw.js и manifest)
-- npm run lint — oxlint во всех workspaces (конфиг apps/web/.oxlintrc.json)
-- npm run typecheck — tsc --noEmit во всех workspaces
+## Команды (из корня)
+- npm run dev — фронт; npm run dev:api — API (нужны db:up и apps/api/.env)
+- npm run db:up / db:down — локальный Postgres в Docker (порт 5434)
+- npm run db:migrate -w @gymlog/api — миграция после правки schema.prisma
+- npm run build / lint / typecheck — по всем workspaces
 
 ## Чего не делать
 - Не добавлять новые зависимости без явного запроса.
