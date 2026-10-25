@@ -1,5 +1,5 @@
 import { useId, useMemo, type FormEvent } from 'react'
-import { useExerciseStore } from '@/entities/exercise'
+import { useExercises } from '@/entities/exercise'
 import type { Workout } from '@/entities/workout'
 import { Button, Input, RestoredDraftNotice } from '@/shared/ui'
 import { useWorkoutForm } from '../model/useWorkoutForm'
@@ -13,7 +13,7 @@ type WorkoutFormProps = {
 
 export const WorkoutForm = ({ workout, onSuccess }: WorkoutFormProps) => {
   const form = useWorkoutForm(workout)
-  const exercises = useExerciseStore((state) => state.exercises)
+  const exercises = useExercises()
   const exerciseOptions = useMemo(() => exercises.map((exercise) => exercise.name), [exercises])
   const dateId = useId()
 

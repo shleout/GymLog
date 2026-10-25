@@ -11,6 +11,7 @@ export { formatDiff, formatNumber } from './formatNumber'
 export { isNewer, mergeRemote } from './lww'
 export { hasDraft, usePersistentDraft, type DraftInfo } from './usePersistentDraft'
 export { cleanName, normalizeName } from './normalizeName'
+export { pluralize } from './pluralize'
 export {
   backupCorrupted,
   createPersistStorage,

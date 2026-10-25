@@ -9,6 +9,7 @@ export const ROUTES = {
   measurement: '/measurements/:measurementId',
   profile: '/profile',
   editProfile: '/profile/edit',
+  exercises: '/profile/exercises',
   login: '/login',
 } as const
 

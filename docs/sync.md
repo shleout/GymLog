@@ -57,6 +57,9 @@
   (restoreItems), битые — в `gymlog-sync-pull:corrupted`.
 - После pull — mergeDuplicateExercises: одно упражнение на normalizeName (раньше createdAt,
   затем меньший id), тренировки переписываются на него, остальные — мягко удаляются.
+- ensureExercise не плодит id: имя удалённого упражнения восстанавливает его tombstone
+  (deletedAt = null, новый updatedAt; из нескольких — удалённый последним), так тренировки
+  и история остаются на старом id. Переименование (renameExercise) — обычная правка с LWW.
 
 ### Владелец локальных данных
 entities/sync userId/userEmail. При входе:

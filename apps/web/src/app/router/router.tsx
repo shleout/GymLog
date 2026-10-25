@@ -3,6 +3,7 @@ import { AddMeasurementPage } from '@/pages/add-measurement'
 import { AddWorkoutPage } from '@/pages/add-workout'
 import { EditProfilePage } from '@/pages/edit-profile'
 import { EditWorkoutPage } from '@/pages/edit-workout'
+import { ExercisesPage } from '@/pages/exercises'
 import { LoginPage } from '@/pages/login'
 import { MeasurementDetailsPage } from '@/pages/measurement-details'
 import { MeasurementsPage } from '@/pages/measurements'
@@ -34,6 +35,7 @@ export const router = createBrowserRouter([
       { path: ROUTES.workout, element: <WorkoutDetailsPage /> },
       { path: ROUTES.editWorkout, element: <EditWorkoutPage /> },
       { path: ROUTES.editProfile, element: <EditProfilePage /> },
+      { path: ROUTES.exercises, element: <ExercisesPage /> },
       { path: ROUTES.addMeasurement, element: <AddMeasurementPage /> },
       { path: ROUTES.measurement, element: <MeasurementDetailsPage /> },
     ],
