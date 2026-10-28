@@ -8,15 +8,20 @@
   /* Dark theme: deep violet base, emerald primary, violet accent. */
   --color-primary: oklch(0.78 0.17 158);
   --color-primary-foreground: oklch(0.2 0.05 165);
-  --color-accent: oklch(0.68 0.18 300);
+  /* Text colors are tuned for APCA (better than WCAG 2 for light text on dark):
+     muted Lc ≈ 77–80 (≥ 75 for small text), accent ≈ 54–57, danger ≈ 51–54 on the surfaces. */
+  --color-accent: oklch(0.76 0.145 300);
   --color-surface: oklch(0.17 0.03 295);
   --color-surface-muted: oklch(0.23 0.04 295);
   /* Inputs, popups and controls placed on surface-muted cards. */
   --color-surface-raised: oklch(0.28 0.045 295);
   --color-text: oklch(0.96 0.01 300);
-  --color-text-muted: oklch(0.74 0.03 300);
+  --color-text-muted: oklch(0.87 0.03 300);
   --color-border: oklch(0.35 0.045 295);
-  --color-danger: oklch(0.64 0.21 22);
+  /* Error text and outlines on dark surfaces. */
+  --color-danger: oklch(0.74 0.155 22);
+  /* Solid fill under white text (destructive confirm buttons): the lighter danger would wash it out. */
+  --color-danger-strong: oklch(0.64 0.21 22);
 }
 
 @layer base {

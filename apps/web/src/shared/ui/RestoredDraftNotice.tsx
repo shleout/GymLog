@@ -28,7 +28,7 @@ export const RestoredDraftNotice = ({ savedAt, warning, onDiscard }: RestoredDra
           <Button variant="secondary" autoFocus onClick={() => setConfirming(false)}>
             Оставить
           </Button>
-          <Button className="bg-danger text-white hover:bg-danger/90" onClick={onDiscard}>
+          <Button className="bg-danger-strong text-white hover:bg-danger-strong/90" onClick={onDiscard}>
             Сбросить
           </Button>
         </div>

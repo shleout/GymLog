@@ -87,7 +87,7 @@ export const DataBackup = () => {
             <Button variant="secondary" autoFocus onClick={() => setPending(null)}>
               Отмена
             </Button>
-            <Button className="bg-danger text-white hover:bg-danger/90" onClick={confirmImport}>
+            <Button className="bg-danger-strong text-white hover:bg-danger-strong/90" onClick={confirmImport}>
               Заменить
             </Button>
           </div>

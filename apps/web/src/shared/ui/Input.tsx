@@ -10,7 +10,7 @@ export const Input = ({ invalid = false, className, ...props }: InputProps) => (
     aria-invalid={invalid || undefined}
     className={cn(
       'min-h-11 w-full rounded-xl border border-border bg-surface-raised px-3 text-base text-text',
-      'placeholder:text-text-muted/60 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30',
+      'placeholder:text-text-muted/70 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30',
       invalid && 'border-danger focus:border-danger focus:ring-danger/30',
       className,
     )}

@@ -45,7 +45,7 @@ export const ForeignDataPrompt = () => {
                 Отмена
               </Button>
               <Button
-                className="bg-danger text-white hover:bg-danger/90"
+                className="bg-danger-strong text-white hover:bg-danger-strong/90"
                 onClick={() => discardLocalData(user)}
               >
                 Удалить

@@ -16,7 +16,7 @@ export const Textarea = ({ invalid = false, rows = 2, className, ...props }: Tex
     rows={rows}
     className={cn(
       'field-sizing-content max-h-48 min-h-18 w-full resize-none rounded-xl border border-border bg-surface-raised px-3 py-2.5 text-base text-text',
-      'placeholder:text-text-muted/60 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30',
+      'placeholder:text-text-muted/70 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30',
       invalid && 'border-danger focus:border-danger focus:ring-danger/30',
       className,
     )}

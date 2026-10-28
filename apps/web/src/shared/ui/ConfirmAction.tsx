@@ -32,7 +32,7 @@ export const ConfirmAction = ({ label, question, confirmLabel, onConfirm }: Conf
         <Button variant="secondary" autoFocus onClick={() => setConfirming(false)}>
           Отмена
         </Button>
-        <Button className="bg-danger text-white hover:bg-danger/90" onClick={onConfirm}>
+        <Button className="bg-danger-strong text-white hover:bg-danger-strong/90" onClick={onConfirm}>
           {confirmLabel}
         </Button>
       </div>
