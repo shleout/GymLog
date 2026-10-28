@@ -32,15 +32,18 @@ model User {
 
 /// Opaque refresh tokens; only a SHA-256 hash is stored, so a DB leak doesn't leak sessions.
 model RefreshToken {
-  id        String   @id @default(uuid(7)) @db.Uuid
-  userId    String   @db.Uuid
-  tokenHash String   @unique
-  expiresAt DateTime
-  createdAt DateTime @default(now())
+  id         String   @id @default(uuid(7)) @db.Uuid
+  userId     String   @db.Uuid
+  tokenHash  String   @unique
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  /// The token this one replaced. It stays valid until this one is used: see AuthService.refresh.
+  previousId String?  @db.Uuid
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([previousId])
 }
 
 // Synced records. Ids come from the client (UUIDs generated offline), so the primary key

@@ -68,30 +68,50 @@ export class AuthService {
   }
 
   /**
-   * Rotation: the used refresh token is deleted and a new one is issued. A stolen token
-   * works at most until the owner's next refresh, after which it's dead.
+   * Rotation with deferred revocation. Using token T issues a new token N (`previousId` = T),
+   * but T is deleted only when N is used for the first time — that's the proof the client
+   * received N. If the response with N is lost (the PWA frozen in the background while a
+   * sleeping server wakes up, a proxy timeout), the cookie still holds T, and T still works.
+   *
+   * Using N deletes T and N's siblings (other tokens issued for T, e.g. on such retries).
+   * So a stolen token works at most until the owner's next refresh with the new token;
+   * a branch an attacker got from T dies as soon as the owner uses N, and vice versa.
    */
   async refresh(refreshToken: string | undefined): Promise<Session> {
     if (!refreshToken) throw new UnauthorizedException()
 
-    const tokenHash = hashRefreshToken(refreshToken)
     const stored = await this.prisma.refreshToken.findUnique({
-      where: { tokenHash },
+      where: { tokenHash: hashRefreshToken(refreshToken) },
       include: { user: true },
     })
     if (!stored || stored.expiresAt <= new Date()) throw new UnauthorizedException()
 
-    // deleteMany doesn't throw when the row is gone: if two requests race with the same token,
-    // only the one that actually deleted it gets a new session.
-    const { count } = await this.prisma.refreshToken.deleteMany({ where: { id: stored.id } })
-    if (count === 0) throw new UnauthorizedException()
+    if (stored.previousId) {
+      const previousId = stored.previousId
+      const [, { count }] = await this.prisma.$transaction([
+        this.prisma.refreshToken.deleteMany({
+          where: { OR: [{ id: previousId }, { previousId, id: { not: stored.id } }] },
+        }),
+        // updateMany doesn't throw when the row is gone: a sibling used at the same moment
+        // has just revoked this token, so this request loses.
+        this.prisma.refreshToken.updateMany({ where: { id: stored.id }, data: { previousId: null } }),
+      ])
+      if (count === 0) throw new UnauthorizedException()
+    }
 
-    return this.createSession(stored.user)
+    return this.createSession(stored.user, stored.id)
   }
 
+  /** Revokes the token and everything still valid around it: its predecessor, siblings and successors. */
   async logout(refreshToken: string | undefined): Promise<void> {
     if (!refreshToken) return
-    await this.prisma.refreshToken.deleteMany({ where: { tokenHash: hashRefreshToken(refreshToken) } })
+    const stored = await this.prisma.refreshToken.findUnique({
+      where: { tokenHash: hashRefreshToken(refreshToken) },
+    })
+    if (!stored) return
+    const related: Prisma.RefreshTokenWhereInput[] = [{ id: stored.id }, { previousId: stored.id }]
+    if (stored.previousId) related.push({ id: stored.previousId }, { previousId: stored.previousId })
+    await this.prisma.refreshToken.deleteMany({ where: { OR: related } })
   }
 
   async getUser(userId: string): Promise<User> {
@@ -101,12 +121,17 @@ export class AuthService {
     return toUser(user)
   }
 
-  private async createSession(user: { id: string; email: string }): Promise<Session> {
+  private async createSession(user: { id: string; email: string }, previousId?: string): Promise<Session> {
     const refreshToken = generateRefreshToken()
     const refreshExpiresAt = new Date(Date.now() + getEnv().REFRESH_TOKEN_TTL_DAYS * DAY_MS)
 
     await this.prisma.refreshToken.create({
-      data: { userId: user.id, tokenHash: hashRefreshToken(refreshToken), expiresAt: refreshExpiresAt },
+      data: {
+        userId: user.id,
+        tokenHash: hashRefreshToken(refreshToken),
+        expiresAt: refreshExpiresAt,
+        previousId,
+      },
     })
     const payload: AccessTokenPayload = { sub: user.id }
 

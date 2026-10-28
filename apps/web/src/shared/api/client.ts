@@ -119,8 +119,8 @@ let refreshInFlight: Promise<AuthResponse> | null = null
 
 /**
  * New access token by the refresh cookie. Single-flight: the server rotates the refresh token
- * on every call, so a second concurrent refresh would present the already revoked token,
- * get 401 and sign the user out. Within a tab the promise is shared; across tabs (they share
+ * on every call; it tolerates a concurrent refresh with the same token, but each one issues
+ * a new token and the cookies race. Within a tab the promise is shared; across tabs (they share
  * the cookie) a Web Lock serializes the calls — the next one runs with the already rotated cookie.
  */
 export const refreshSession = (): Promise<AuthResponse> => {
