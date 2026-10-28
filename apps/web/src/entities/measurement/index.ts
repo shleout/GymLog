@@ -19,5 +19,10 @@ export {
   type LatestValue,
   type MeasuredValue,
 } from './lib/getLatestMeasurements'
+export {
+  getMeasurementTracks,
+  type MeasurementTrack,
+  type TrackPoint,
+} from './lib/getMeasurementTracks'
 export { getPreviousValues, type PreviousValues } from './lib/getPreviousValues'
 export { sortMeasurementsDesc } from './lib/sortMeasurementsDesc'

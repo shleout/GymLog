@@ -83,7 +83,8 @@
 - Форма тренировки — features/workout-form (WorkoutForm: без workout — создание,
   с workout — редактирование).
 - Последние/предыдущие значения замеров — entities/measurement/lib/getLatestMeasurements.ts
-  и getPreviousValues.ts. Статистика тренировки — entities/workout/lib/getWorkoutStats.ts.
+  и getPreviousValues.ts; ряды по частям тела для графика — getMeasurementTracks.ts (виджет
+  widgets/measurement-chart, «История» на /measurements: График | Список). Статистика тренировки — entities/workout/lib/getWorkoutStats.ts.
 - Нижний таб-бар (widgets/nav-bar) — только на верхнеуровневых страницах, вложенных в
   layout-роут app/ui/TabLayout.tsx. Формы и страницы просмотра (с «←») — вне него.
 - Вход обязателен (гарды в app/ui/AuthGuard.tsx), единственная публичная страница — /login.
