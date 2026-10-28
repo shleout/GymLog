@@ -16,17 +16,27 @@ const DateField = z
   })
   .pipe(WorkoutSchema.shape.date)
 
+/** Empty or whitespace-only note is no note. Workout and entry notes share the rules. */
+const NoteField = z
+  .string()
+  .trim()
+  .transform((value) => value || undefined)
+  .pipe(WorkoutSchema.shape.note)
+
 const SetField = z.object({
   weight: z.string().trim().transform(parseDecimal).pipe(SetSchema.shape.weight),
   reps: z.string().trim().transform(parseDecimal).pipe(SetSchema.shape.reps),
+  rir: z.string().trim().transform(parseDecimal).pipe(SetSchema.shape.rir),
 })
 
 const EntryField = z.object({
   name: z.string().trim().min(1, 'Введите название упражнения'),
   sets: z.array(SetField).min(1, 'Добавьте хотя бы один подход'),
+  note: NoteField,
 })
 
 export const WorkoutFormSchema = z.object({
   date: DateField,
   entries: z.array(EntryField).min(1, 'Добавьте хотя бы одно упражнение'),
+  note: NoteField,
 })

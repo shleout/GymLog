@@ -40,8 +40,12 @@
 
 ## Доменная модель
 - Exercise: id, name, muscleGroup?.
-- Set: id, weight? (кг, шаг 0.5), reps, completed. Живёт в entities/workout/model.
-- WorkoutEntry: exerciseId, sets: Set[]. Workout: id, date (ISO), entries.
+- Set: id, weight? (кг, шаг 0.5), reps, completed, rir? (повторы в запасе, целое 0–10).
+  Живёт в entities/workout/model.
+- WorkoutEntry: exerciseId, sets: Set[], note?. Workout: id, date (ISO), entries, note?.
+  Заметки — trim, 1–1000 символов, пустая = нет поля. Заметка тренировки — колонка в БД,
+  заметка упражнения и rir — внутри JSON entries. В подсказке формы — последняя заметка
+  по упражнению (даже из давней тренировки).
 - Правила: weight (если указан) > 0, reps — целое > 0, date не в будущем.
 - weight — рабочий или дополнительный вес; для упражнений с собственным весом не указывается.
 - Упражнения вводятся свободным текстом и сохраняются в справочник (ensureExercise).

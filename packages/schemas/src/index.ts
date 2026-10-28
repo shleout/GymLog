@@ -42,6 +42,8 @@ export {
   type SyncMeta,
 } from './syncMeta.js'
 export {
+  NOTE_MAX_LENGTH,
+  RIR_MAX,
   SetSchema,
   WorkoutEntrySchema,
   WorkoutSchema,

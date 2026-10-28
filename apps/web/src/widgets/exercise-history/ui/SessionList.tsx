@@ -1,7 +1,7 @@
 import { format, parseISO } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { Link } from 'react-router'
-import { formatSet, type ExerciseSession, type ProgressPoint } from '@/entities/workout'
+import { formatSetWithRir, type ExerciseSession, type ProgressPoint } from '@/entities/workout'
 import { paths } from '@/shared/config'
 import { cn } from '@/shared/lib'
 
@@ -44,11 +44,14 @@ export const SessionList = ({ sessions, points }: SessionListProps) => {
                   return (
                     <span key={set.id} className={cn(best && 'font-semibold text-primary')}>
                       {best && <span aria-label="лучший подход">★ </span>}
-                      {formatSet(set)}
+                      {formatSetWithRir(set)}
                     </span>
                   )
                 })}
               </p>
+              {session.notes.length > 0 && (
+                <p className="whitespace-pre-line text-sm">{session.notes.join('\n')}</p>
+              )}
             </Link>
           </li>
         )

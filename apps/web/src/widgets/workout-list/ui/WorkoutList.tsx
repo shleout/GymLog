@@ -61,6 +61,9 @@ export const WorkoutList = ({ className }: WorkoutListProps) => {
                 </li>
               ))}
             </ul>
+            {workout.note && (
+              <p className="line-clamp-2 whitespace-pre-line text-sm text-text-muted">{workout.note}</p>
+            )}
           </Link>
         </li>
       ))}

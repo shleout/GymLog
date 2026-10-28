@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 /** Current version of the persisted workout state. Bump it together with a new migration step. */
-export const WORKOUT_STATE_VERSION = 1
+export const WORKOUT_STATE_VERSION = 2
 
 // Shapes of old versions are described loosely: only the fields a step needs.
 const V0StateSchema = z.object({
@@ -26,5 +26,6 @@ const v0ToV1 = (state: unknown): unknown => {
 export const migrateWorkoutState = (persisted: unknown, version: number): unknown => {
   let state = persisted
   if (version < 1) state = v0ToV1(state)
+  // v1 → v2: optional notes (workout, entry) and set RIR. Old records are valid as is.
   return state
 }

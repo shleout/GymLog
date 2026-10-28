@@ -4,6 +4,7 @@ import type { Workout } from '@/entities/workout'
 import { Button, Input, RestoredDraftNotice } from '@/shared/ui'
 import { useWorkoutForm } from '../model/useWorkoutForm'
 import { ExerciseEntryCard } from './ExerciseEntryCard'
+import { NoteField } from './NoteField'
 
 type WorkoutFormProps = {
   /** Workout to edit. Without it the form creates a new workout. */
@@ -63,6 +64,7 @@ export const WorkoutForm = ({ workout, onSuccess }: WorkoutFormProps) => {
           exerciseOptions={exerciseOptions}
           canRemove={form.draft.entries.length > 1}
           onNameChange={(name) => form.setEntryName(entry.key, name)}
+          onNoteChange={(note) => form.setEntryNote(entry.key, note)}
           onRemove={() => form.removeEntry(entry.key)}
           onAddSet={() => form.addSet(entry.key)}
           onRemoveSet={(setKey) => form.removeSet(entry.key, setKey)}
@@ -74,6 +76,14 @@ export const WorkoutForm = ({ workout, onSuccess }: WorkoutFormProps) => {
       <Button variant="secondary" onClick={form.addEntry}>
         + Упражнение
       </Button>
+
+      <NoteField
+        label="Заметка к тренировке"
+        placeholder="Например: не выспался, болело плечо"
+        value={form.draft.note}
+        error={form.errors.note}
+        onChange={form.setNote}
+      />
 
       <Button type="submit" className="mt-2 min-h-14 text-lg">
         {workout ? 'Сохранить изменения' : 'Сохранить тренировку'}

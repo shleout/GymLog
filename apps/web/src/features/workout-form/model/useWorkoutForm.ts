@@ -5,7 +5,7 @@ import { useWorkoutStore, type Workout, type WorkoutInput } from '@/entities/wor
 import { collectErrors, createId, usePersistentDraft } from '@/shared/lib'
 import { WorkoutDraftSchema, workoutDraftKey } from './draftStorage'
 import { WorkoutFormSchema } from './formSchema'
-import type { EntryDraft, FormErrors, SetDraft, WorkoutDraft } from './types'
+import type { EntryDraft, FormErrors, SetDraft, SetField, WorkoutDraft } from './types'
 
 const DATE_INPUT_FORMAT = 'yyyy-MM-dd'
 
@@ -13,6 +13,8 @@ const createSetDraft = (from?: SetDraft): SetDraft => ({
   key: createId(),
   weight: from?.weight ?? '',
   reps: from?.reps ?? '',
+  // Not copied: effort changes from set to set, a copied value would be a guess.
+  rir: '',
   completed: true,
 })
 
@@ -20,6 +22,7 @@ const createEntryDraft = (): EntryDraft => ({
   key: createId(),
   name: '',
   sets: [createSetDraft()],
+  note: '',
 })
 
 const getToday = (): string => format(new Date(), DATE_INPUT_FORMAT)
@@ -33,9 +36,12 @@ const workoutToDraft = (workout: Workout, exercises: Exercise[]): WorkoutDraft =
       key: set.id,
       weight: set.weight === undefined ? '' : String(set.weight),
       reps: String(set.reps),
+      rir: set.rir === undefined ? '' : String(set.rir),
       completed: set.completed,
     })),
+    note: entry.note ?? '',
   })),
+  note: workout.note ?? '',
 })
 
 /**
@@ -50,7 +56,7 @@ export const useWorkoutForm = (workout?: Workout) => {
     create: () =>
       workout
         ? workoutToDraft(workout, useExerciseStore.getState().exercises)
-        : { date: today, entries: [createEntryDraft()] },
+        : { date: today, entries: [createEntryDraft()], note: '' },
     base: workout?.updatedAt ?? null,
   })
   // Errors are shown only after the first submit attempt, then revalidated on every change.
@@ -74,6 +80,8 @@ export const useWorkoutForm = (workout?: Workout) => {
 
   const setDate = (date: string) => setDraft((prev) => ({ ...prev, date }))
 
+  const setNote = (note: string) => setDraft((prev) => ({ ...prev, note }))
+
   const addEntry = () =>
     setDraft((prev) => ({ ...prev, entries: [...prev.entries, createEntryDraft()] }))
 
@@ -85,6 +93,9 @@ export const useWorkoutForm = (workout?: Workout) => {
 
   const setEntryName = (entryKey: string, name: string) =>
     updateEntry(entryKey, (entry) => ({ ...entry, name }))
+
+  const setEntryNote = (entryKey: string, note: string) =>
+    updateEntry(entryKey, (entry) => ({ ...entry, note }))
 
   /** New set copies the previous one: in the gym sets are usually repeated with the same numbers. */
   const addSet = (entryKey: string) =>
@@ -102,7 +113,7 @@ export const useWorkoutForm = (workout?: Workout) => {
   const setSetField = (
     entryKey: string,
     setKey: string,
-    field: 'weight' | 'reps',
+    field: SetField,
     value: string,
   ) =>
     updateEntry(entryKey, (entry) => ({
@@ -133,10 +144,13 @@ export const useWorkoutForm = (workout?: Workout) => {
             id: setDraft.key,
             weight: set.weight,
             reps: set.reps,
+            rir: set.rir,
             completed: setDraft.completed,
           }
         }),
+        note: entry.note,
       })),
+      note: result.data.note,
     }
 
     if (workout) updateWorkout(saved)
@@ -163,9 +177,11 @@ export const useWorkoutForm = (workout?: Workout) => {
     startOver,
     errors,
     setDate,
+    setNote,
     addEntry,
     removeEntry,
     setEntryName,
+    setEntryNote,
     addSet,
     removeSet,
     setSetField,

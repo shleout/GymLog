@@ -55,6 +55,7 @@ model Workout {
   date      DateTime
   /// WorkoutEntry[] — always read and written as a whole, validated by @gymlog/schemas.
   entries   Json
+  note      String?
   createdAt DateTime
   updatedAt DateTime
   deletedAt DateTime?

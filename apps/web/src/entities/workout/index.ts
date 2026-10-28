@@ -1,5 +1,12 @@
 export type { Set, Workout, WorkoutEntry, WorkoutInput, WorkoutState } from './model/types'
-export { SetSchema, WorkoutEntrySchema, WorkoutSchema, WorkoutStateSchema } from './model/schemas'
+export {
+  NOTE_MAX_LENGTH,
+  RIR_MAX,
+  SetSchema,
+  WorkoutEntrySchema,
+  WorkoutSchema,
+  WorkoutStateSchema,
+} from './model/schemas'
 export {
   selectActiveWorkouts,
   useWorkoutById,
@@ -10,7 +17,7 @@ export {
 export { getWorkoutStats, type WorkoutStats } from './lib/getWorkoutStats'
 export { sortWorkoutsDesc } from './lib/sortWorkoutsDesc'
 export { estimateOneRepMax, RELIABLE_ESTIMATE_MAX_REPS } from './lib/estimateOneRepMax'
-export { formatSet } from './lib/formatSet'
+export { formatSet, formatSetWithRir } from './lib/formatSet'
 export { getBestSet, type BestSet } from './lib/getBestSet'
 export {
   getExerciseProgress,

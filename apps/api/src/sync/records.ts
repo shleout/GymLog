@@ -31,6 +31,7 @@ const MeasurementValuesSchema = MeasurementValueSchema.array()
 export const workoutToRow = (workout: Workout) => ({
   date: toDate(workout.date),
   entries: workout.entries as Prisma.InputJsonValue,
+  note: workout.note ?? null,
   createdAt: toDate(workout.createdAt),
   updatedAt: toDate(workout.updatedAt),
   deletedAt: workout.deletedAt === null ? null : toDate(workout.deletedAt),
@@ -41,6 +42,7 @@ export const workoutFromRow = (row: WorkoutRow): Workout => ({
   date: toIso(row.date),
   // Json columns come back as `unknown`-ish JsonValue; parse instead of casting.
   entries: WorkoutEntriesSchema.parse(row.entries),
+  ...optional('note', row.note),
   createdAt: toIso(row.createdAt),
   updatedAt: toIso(row.updatedAt),
   deletedAt: toIsoOrNull(row.deletedAt),

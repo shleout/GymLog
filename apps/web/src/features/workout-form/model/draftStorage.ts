@@ -7,6 +7,8 @@ const SetDraftSchema = z.object({
   key: z.string(),
   weight: z.string(),
   reps: z.string(),
+  // Defaults: drafts started before notes and RIR existed stay valid.
+  rir: z.string().default(''),
   completed: z.boolean(),
 })
 
@@ -18,8 +20,10 @@ export const WorkoutDraftSchema: z.ZodType<WorkoutDraft> = z.object({
       key: z.string(),
       name: z.string(),
       sets: z.array(SetDraftSchema),
+      note: z.string().default(''),
     }),
   ),
+  note: z.string().default(''),
 })
 
 const NEW_WORKOUT_DRAFT_KEY = 'workout:new'

@@ -1,9 +1,11 @@
 import { normalizeExerciseName } from '@/entities/exercise'
 import { Button, Combobox } from '@/shared/ui'
-import type { EntryDraft, FormErrors } from '../model/types'
+import { cn } from '@/shared/lib'
+import type { EntryDraft, FormErrors, SetField } from '../model/types'
 import { useExerciseHint } from '../model/useExerciseHint'
 import { ExerciseHint } from './ExerciseHint'
-import { SetRow } from './SetRow'
+import { NoteField } from './NoteField'
+import { SET_GRID, SetRow } from './SetRow'
 
 type ExerciseEntryCardProps = {
   index: number
@@ -15,10 +17,11 @@ type ExerciseEntryCardProps = {
   exerciseOptions: string[]
   canRemove: boolean
   onNameChange: (name: string) => void
+  onNoteChange: (note: string) => void
   onRemove: () => void
   onAddSet: () => void
   onRemoveSet: (setKey: string) => void
-  onSetChange: (setKey: string, field: 'weight' | 'reps', value: string) => void
+  onSetChange: (setKey: string, field: SetField, value: string) => void
 }
 
 export const ExerciseEntryCard = ({
@@ -30,6 +33,7 @@ export const ExerciseEntryCard = ({
   exerciseOptions,
   canRemove,
   onNameChange,
+  onNoteChange,
   onRemove,
   onAddSet,
   onRemoveSet,
@@ -69,10 +73,13 @@ export const ExerciseEntryCard = ({
 
       {hint && <ExerciseHint hint={hint} />}
 
-      <div className="grid grid-cols-[2rem_1fr_1fr_2.75rem] gap-2 text-xs font-medium uppercase text-text-muted">
+      <div className={cn('grid gap-2 text-xs font-medium uppercase text-text-muted', SET_GRID)}>
         <span className="text-center">#</span>
         <span>Вес, кг</span>
         <span>Повторы</span>
+        <span className="text-center" title="Повторов в запасе (reps in reserve)">
+          RIR
+        </span>
       </div>
 
       <ol className="flex flex-col gap-2">
@@ -83,6 +90,7 @@ export const ExerciseEntryCard = ({
             set={set}
             weightError={errors[`${path}.sets.${setIndex}.weight`]}
             repsError={errors[`${path}.sets.${setIndex}.reps`]}
+            rirError={errors[`${path}.sets.${setIndex}.rir`]}
             canRemove={entry.sets.length > 1}
             onChange={(field, value) => onSetChange(set.key, field, value)}
             onRemove={() => onRemoveSet(set.key)}
@@ -94,6 +102,14 @@ export const ExerciseEntryCard = ({
       <Button variant="secondary" className="bg-surface-raised" onClick={onAddSet}>
         + Подход
       </Button>
+
+      <NoteField
+        label="Заметка к упражнению"
+        placeholder="Например: сиденье на 4, в следующий раз 82,5"
+        value={entry.note}
+        error={errors[`${path}.note`]}
+        onChange={onNoteChange}
+      />
     </section>
   )
 }

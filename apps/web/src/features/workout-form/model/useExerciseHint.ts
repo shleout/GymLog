@@ -28,6 +28,11 @@ export type ExerciseHint = {
    * without weight — the most reps in one set.
    */
   record?: { kind: 'weight'; reps: number; best?: RepRecord } | { kind: 'reps'; best: MaxRepsRecord }
+  /**
+   * The latest note about the exercise, even if it was left several workouts ago:
+   * notes like machine settings are written once and stay relevant.
+   */
+  note?: { session: ExerciseSession; text: string }
 }
 
 /** Reps of the last set with a valid value: usually the one being typed. */
@@ -59,14 +64,18 @@ export const useExerciseHint = ({ name, sets, date, workoutId }: ExerciseHintPar
   const last = sessions[0]
   if (!last) return undefined
 
+  const noted = sessions.find((session) => session.notes.length > 0)
+  const note = noted && { session: noted, text: noted.notes.join('\n') }
+
   const weighted = sessions.some((session) => session.sets.some((set) => set.weight !== undefined))
   if (!weighted) {
     const best = getMaxRepsRecords(sessions)[0]
-    return { last, record: best ? { kind: 'reps', best } : undefined }
+    return { last, record: best ? { kind: 'reps', best } : undefined, note }
   }
   const reps = getCurrentReps(sets)
   return {
     last,
     record: reps === undefined ? undefined : { kind: 'weight', reps, best: getRepRecord(sessions, reps) },
+    note,
   }
 }
