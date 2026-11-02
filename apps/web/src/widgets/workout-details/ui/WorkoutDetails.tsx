@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router'
-import { useExerciseStore } from '@/entities/exercise'
+import { useExerciseStore, type Exercise } from '@/entities/exercise'
 import { getWorkoutStats, type Workout } from '@/entities/workout'
 import { paths } from '@/shared/config'
 import { cn, formatNumber } from '@/shared/lib'
@@ -10,8 +10,29 @@ type WorkoutDetailsProps = {
   className?: string
 }
 
-export const WorkoutDetails = ({ workout, className }: WorkoutDetailsProps) => {
-  const exercises = useExerciseStore((state) => state.exercises)
+type WorkoutDetailsViewProps = WorkoutDetailsProps & {
+  /** Including deleted ones: they still name the entries that reference them. */
+  exercises: Exercise[]
+  /** Exercise progress page; without it exercise names aren't links (admin panel). */
+  getExerciseLink?: (exerciseId: string) => string
+}
+
+export const WorkoutDetails = ({ workout, className }: WorkoutDetailsProps) => (
+  <WorkoutDetailsView
+    workout={workout}
+    exercises={useExerciseStore((state) => state.exercises)}
+    getExerciseLink={paths.exercise}
+    className={className}
+  />
+)
+
+/** The same for a workout of any user, e.g. in the admin panel. */
+export const WorkoutDetailsView = ({
+  workout,
+  exercises,
+  getExerciseLink,
+  className,
+}: WorkoutDetailsViewProps) => {
   const exerciseNames = useMemo(
     () => new Map(exercises.map((exercise) => [exercise.id, exercise.name])),
     [exercises],
@@ -57,9 +78,9 @@ export const WorkoutDetails = ({ workout, className }: WorkoutDetailsProps) => {
             className="flex flex-col gap-3 rounded-2xl bg-surface-muted p-4"
           >
             <h2 className="text-lg font-semibold">
-              {activeExerciseIds.has(entry.exerciseId) ? (
+              {getExerciseLink && activeExerciseIds.has(entry.exerciseId) ? (
                 <Link
-                  to={paths.exercise(entry.exerciseId)}
+                  to={getExerciseLink(entry.exerciseId)}
                   className="-my-2 inline-flex min-h-11 items-center gap-2 rounded-lg hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                 >
                   {exerciseNames.get(entry.exerciseId)}

@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
-import type { AuthResponse, Credentials, User } from '@gymlog/schemas'
+import type { AuthResponse, Credentials, User, UserRole } from '@gymlog/schemas'
 import { hash, verify } from 'argon2'
 import { getEnv } from '../config/env.js'
 import { Prisma } from '../generated/prisma/client.js'
@@ -19,7 +19,9 @@ const generateRefreshToken = (): string => randomBytes(32).toString('base64url')
 /** A fast hash is enough here: the token has 256 bits of entropy, unlike a password. */
 const hashRefreshToken = (token: string): string => createHash('sha256').update(token).digest('hex')
 
-const toUser = (user: { id: string; email: string }): User => ({ id: user.id, email: user.email })
+type UserRow = { id: string; email: string; role: UserRole }
+
+const toUser = (user: UserRow): User => ({ id: user.id, email: user.email, role: user.role })
 
 @Injectable()
 export class AuthService {
@@ -121,7 +123,7 @@ export class AuthService {
     return toUser(user)
   }
 
-  private async createSession(user: { id: string; email: string }, previousId?: string): Promise<Session> {
+  private async createSession(user: UserRow, previousId?: string): Promise<Session> {
     const refreshToken = generateRefreshToken()
     const refreshExpiresAt = new Date(Date.now() + getEnv().REFRESH_TOKEN_TTL_DAYS * DAY_MS)
 

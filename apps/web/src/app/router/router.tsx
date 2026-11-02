@@ -1,5 +1,6 @@
 import { createBrowserRouter } from 'react-router'
 import { AddMeasurementPage } from '@/pages/add-measurement'
+import { AdminMeasurementPage, AdminUserPage, AdminUsersPage, AdminWorkoutPage } from '@/pages/admin'
 import { AddWorkoutPage } from '@/pages/add-workout'
 import { EditProfilePage } from '@/pages/edit-profile'
 import { EditWorkoutPage } from '@/pages/edit-workout'
@@ -12,7 +13,7 @@ import { ProfilePage } from '@/pages/profile'
 import { WorkoutDetailsPage } from '@/pages/workout-details'
 import { WorkoutHistoryPage } from '@/pages/workout-history'
 import { ROUTES } from '@/shared/config'
-import { RequireAuth, RequireGuest } from '../ui/AuthGuard'
+import { RequireAdmin, RequireAuth, RequireGuest } from '../ui/AuthGuard'
 import { TabLayout } from '../ui/TabLayout'
 
 export const router = createBrowserRouter([
@@ -40,6 +41,15 @@ export const router = createBrowserRouter([
       { path: ROUTES.exercise, element: <ExerciseDetailsPage /> },
       { path: ROUTES.addMeasurement, element: <AddMeasurementPage /> },
       { path: ROUTES.measurement, element: <MeasurementDetailsPage /> },
+      {
+        element: <RequireAdmin />,
+        children: [
+          { path: ROUTES.admin, element: <AdminUsersPage /> },
+          { path: ROUTES.adminUser, element: <AdminUserPage /> },
+          { path: ROUTES.adminWorkout, element: <AdminWorkoutPage /> },
+          { path: ROUTES.adminMeasurement, element: <AdminMeasurementPage /> },
+        ],
+      },
     ],
   },
 ])

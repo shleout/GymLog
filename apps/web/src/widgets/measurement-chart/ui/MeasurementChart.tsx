@@ -2,13 +2,24 @@ import { format, parseISO, subMonths, subYears } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
-import { getMeasurementTracks, useMeasurements, type TrackPoint } from '@/entities/measurement'
+import {
+  getMeasurementTracks,
+  useMeasurements,
+  type Measurement,
+  type TrackPoint,
+} from '@/entities/measurement'
 import { paths } from '@/shared/config'
 import { cn, formatDiff, formatNumber } from '@/shared/lib'
 import { Chip, LineChart } from '@/shared/ui'
 
 type MeasurementChartProps = {
   className?: string
+}
+
+type MeasurementChartViewProps = MeasurementChartProps & {
+  /** Active sessions, in any order. */
+  measurements: Measurement[]
+  getMeasurementLink: (measurementId: string) => string
 }
 
 type Period = '3m' | '1y' | 'all'
@@ -23,8 +34,20 @@ const PERIODS: { value: Period; label: string; since: (now: Date) => Date | null
 const formatDate = (iso: string): string => format(parseISO(iso), 'd MMM yyyy', { locale: ru })
 
 /** One body part (or body weight) over time; tap a point to open its session. */
-export const MeasurementChart = ({ className }: MeasurementChartProps) => {
-  const measurements = useMeasurements()
+export const MeasurementChart = ({ className }: MeasurementChartProps) => (
+  <MeasurementChartView
+    measurements={useMeasurements()}
+    getMeasurementLink={paths.measurement}
+    className={className}
+  />
+)
+
+/** The same for any sessions passed in, e.g. another user's in the admin panel. */
+export const MeasurementChartView = ({
+  measurements,
+  getMeasurementLink,
+  className,
+}: MeasurementChartViewProps) => {
   const tracks = useMemo(() => getMeasurementTracks(measurements), [measurements])
   const [trackId, setTrackId] = useState<string | null>(null)
   const [period, setPeriod] = useState<Period>('all')
@@ -111,7 +134,7 @@ export const MeasurementChart = ({ className }: MeasurementChartProps) => {
 
       {selected ? (
         <Link
-          to={paths.measurement(selected.measurementId)}
+          to={getMeasurementLink(selected.measurementId)}
           className="flex min-h-14 items-center justify-between gap-3 rounded-2xl bg-surface-muted px-4 py-2 transition-colors hover:bg-surface-muted/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary active:bg-surface-muted/60"
         >
           <span className="flex min-w-0 flex-col">

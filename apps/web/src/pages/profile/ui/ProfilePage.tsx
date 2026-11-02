@@ -1,27 +1,39 @@
 import { Link } from 'react-router'
+import { useIsAdmin } from '@/entities/session'
 import { DataBackup } from '@/features/data-backup'
 import { AccountPanel } from '@/widgets/account'
 import { ProfileOverview } from '@/widgets/profile-overview'
 import { APP_VERSION, ROUTES } from '@/shared/config'
 import { buttonStyles } from '@/shared/ui'
+import { AdminPanelLink } from './AdminPanelLink'
 
-export const ProfilePage = () => (
-  <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-4 py-6">
-    <header className="flex items-center gap-2">
-      <h1 className="flex-1 text-2xl font-bold">Профиль</h1>
-      <Link to={ROUTES.editProfile} className={buttonStyles('secondary')}>
-        Изменить
-      </Link>
-    </header>
-    <ProfileOverview />
-    <section className="flex flex-col gap-3 border-t border-border pt-6">
-      <h2 className="text-lg font-semibold">Данные</h2>
-      <DataBackup />
-    </section>
-    <section className="flex flex-col gap-3 border-t border-border pt-6">
-      <h2 className="text-lg font-semibold">Аккаунт</h2>
-      <AccountPanel />
-    </section>
-    <p className="text-center text-sm text-text-muted">version {APP_VERSION}</p>
-  </main>
-)
+export const ProfilePage = () => {
+  const isAdmin = useIsAdmin()
+
+  return (
+    <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-4 py-6">
+      <header className="flex items-center gap-2">
+        <h1 className="flex-1 text-2xl font-bold">Профиль</h1>
+        <Link to={ROUTES.editProfile} className={buttonStyles('secondary')}>
+          Изменить
+        </Link>
+      </header>
+      <ProfileOverview />
+      <section className="flex flex-col gap-3 border-t border-border pt-6">
+        <h2 className="text-lg font-semibold">Данные</h2>
+        <DataBackup />
+      </section>
+      {isAdmin && (
+        <section className="flex flex-col gap-3 border-t border-border pt-6">
+          <h2 className="text-lg font-semibold">Администрирование</h2>
+          <AdminPanelLink />
+        </section>
+      )}
+      <section className="flex flex-col gap-3 border-t border-border pt-6">
+        <h2 className="text-lg font-semibold">Аккаунт</h2>
+        <AccountPanel />
+      </section>
+      <p className="text-center text-sm text-text-muted">version {APP_VERSION}</p>
+    </main>
+  )
+}

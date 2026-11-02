@@ -1,1 +1,1 @@
-export { WorkoutDetails } from './ui/WorkoutDetails'
+export { WorkoutDetails, WorkoutDetailsView } from './ui/WorkoutDetails'

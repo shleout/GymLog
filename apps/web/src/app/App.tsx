@@ -1,4 +1,5 @@
 import { RouterProvider } from 'react-router/dom'
+import { useAdminUserStore } from '@/entities/admin-user'
 import { useExerciseStore } from '@/entities/exercise'
 import { useMeasurementStore } from '@/entities/measurement'
 import { useProfileStore } from '@/entities/profile'
@@ -20,5 +21,10 @@ syncPersistedStoresAcrossTabs([
   useSessionStore,
   useSyncStore,
 ])
+
+// Admin data is an in-memory cache of what the previous account was allowed to see.
+useSessionStore.subscribe((state, previous) => {
+  if (state.user?.id !== previous.user?.id) useAdminUserStore.getState().reset()
+})
 
 export const App = () => <RouterProvider router={router} />

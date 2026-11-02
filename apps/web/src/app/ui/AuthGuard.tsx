@@ -1,6 +1,6 @@
 import { Navigate, Outlet, useLocation } from 'react-router'
 import { z } from 'zod'
-import { useCurrentUser } from '@/entities/session'
+import { useCurrentUser, useIsAdmin } from '@/entities/session'
 import { ForeignDataPrompt, useForeignDataOwner } from '@/features/sync'
 import { ROUTES } from '@/shared/config'
 
@@ -14,6 +14,15 @@ export const RequireAuth = () => {
   if (user) return foreignOwner ? <ForeignDataPrompt /> : <Outlet />
   const from = location.pathname + location.search
   return <Navigate to={ROUTES.login} replace state={{ from }} />
+}
+
+/**
+ * Admin panel. Only hides the screens from other users: the API checks the role on every
+ * request anyway. Inside RequireAuth, so the user is signed in here.
+ */
+export const RequireAdmin = () => {
+  const isAdmin = useIsAdmin()
+  return isAdmin ? <Outlet /> : <Navigate to={ROUTES.profile} replace />
 }
 
 /** Login screen: once signed in, go back to where the user was heading. */

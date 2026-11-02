@@ -18,9 +18,14 @@ export const CredentialsSchema = z.object({
     .max(PASSWORD_MAX_LENGTH, `Пароль — максимум ${PASSWORD_MAX_LENGTH} символов`),
 })
 
+export const USER_ROLES = ['user', 'admin'] as const
+/** `admin` sees other users' workouts and measurements (read only) in the admin panel. */
+export const UserRoleSchema = z.enum(USER_ROLES)
+
 export const UserSchema = z.object({
   id: z.string(),
   email: z.string(),
+  role: UserRoleSchema,
 })
 
 /**
@@ -33,5 +38,6 @@ export const AuthResponseSchema = z.object({
 })
 
 export type Credentials = z.infer<typeof CredentialsSchema>
+export type UserRole = z.infer<typeof UserRoleSchema>
 export type User = z.infer<typeof UserSchema>
 export type AuthResponse = z.infer<typeof AuthResponseSchema>

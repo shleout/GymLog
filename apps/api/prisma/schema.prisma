@@ -13,10 +13,18 @@ datasource db {
   provider = "postgresql"
 }
 
+/// `admin` sees other users' data (read only) in the admin panel. Granted by SQL only:
+/// there is no endpoint that changes roles.
+enum UserRole {
+  user
+  admin
+}
+
 model User {
   id           String   @id @default(uuid(7)) @db.Uuid
   email        String   @unique
   passwordHash String
+  role         UserRole @default(user)
   /// Last sync revision handed out to this user's records. Incremented under a row lock
   /// in every push, so revisions of one user are committed strictly in order (see SyncService).
   revision     Int      @default(0)

@@ -1,11 +1,21 @@
 import { format, parseISO } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { useMemo } from 'react'
-import { getLatestMeasurements, useMeasurements, type LatestValue } from '@/entities/measurement'
+import {
+  getLatestMeasurements,
+  useMeasurements,
+  type LatestValue,
+  type Measurement,
+} from '@/entities/measurement'
 import { cn, formatDiff, formatNumber } from '@/shared/lib'
 
 type LatestMeasurementsProps = {
   className?: string
+}
+
+type LatestMeasurementsViewProps = LatestMeasurementsProps & {
+  /** Active sessions, in any order. */
+  measurements: Measurement[]
 }
 
 type Row = {
@@ -21,8 +31,12 @@ const formatLatestDiff = (latest: LatestValue): string | null =>
   latest.previous ? formatDiff(latest.value, latest.previous.value) : null
 
 /** Latest body weight and value of every measured body part, with change to the previous one. */
-export const LatestMeasurements = ({ className }: LatestMeasurementsProps) => {
-  const measurements = useMeasurements()
+export const LatestMeasurements = ({ className }: LatestMeasurementsProps) => (
+  <LatestMeasurementsView measurements={useMeasurements()} className={className} />
+)
+
+/** The same for any sessions passed in, e.g. another user's in the admin panel. */
+export const LatestMeasurementsView = ({ measurements, className }: LatestMeasurementsViewProps) => {
   const latest = useMemo(() => getLatestMeasurements(measurements), [measurements])
 
   const rows: Row[] = [

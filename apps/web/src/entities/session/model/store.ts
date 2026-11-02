@@ -48,3 +48,6 @@ export const useSessionStore = create<SessionStore>()(
 )
 
 export const useCurrentUser = (): User | null => useSessionStore((state) => state.user)
+
+/** Shows the admin panel entry. The server checks the role itself; this only hides UI. */
+export const useIsAdmin = (): boolean => useSessionStore((state) => state.user?.role === 'admin')

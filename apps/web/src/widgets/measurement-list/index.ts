@@ -1,1 +1,1 @@
-export { MeasurementList } from './ui/MeasurementList'
+export { MeasurementList, MeasurementListView } from './ui/MeasurementList'

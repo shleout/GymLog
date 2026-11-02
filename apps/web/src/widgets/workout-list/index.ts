@@ -1,1 +1,1 @@
-export { WorkoutList } from './ui/WorkoutList'
+export { WorkoutList, WorkoutListView } from './ui/WorkoutList'

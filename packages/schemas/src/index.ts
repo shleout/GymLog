@@ -1,13 +1,24 @@
 export {
+  AdminUserDataSchema,
+  AdminUserIdSchema,
+  AdminUserSummarySchema,
+  AdminUsersResponseSchema,
+  type AdminUserData,
+  type AdminUserSummary,
+} from './admin.js'
+export {
   AuthResponseSchema,
   CredentialsSchema,
   EmailSchema,
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
+  USER_ROLES,
+  UserRoleSchema,
   UserSchema,
   type AuthResponse,
   type Credentials,
   type User,
+  type UserRole,
 } from './auth.js'
 export { ExerciseSchema, type Exercise } from './exercise.js'
 export {

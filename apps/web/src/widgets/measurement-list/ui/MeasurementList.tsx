@@ -2,7 +2,7 @@ import { format, parseISO } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { useMemo } from 'react'
 import { Link } from 'react-router'
-import { sortMeasurementsDesc, useMeasurements } from '@/entities/measurement'
+import { sortMeasurementsDesc, useMeasurements, type Measurement } from '@/entities/measurement'
 import { paths } from '@/shared/config'
 import { cn, formatNumber } from '@/shared/lib'
 
@@ -10,9 +10,27 @@ type MeasurementListProps = {
   className?: string
 }
 
-export const MeasurementList = ({ className }: MeasurementListProps) => {
-  const measurements = useMeasurements()
+type MeasurementListViewProps = MeasurementListProps & {
+  /** Active sessions, in any order. */
+  measurements: Measurement[]
+  getMeasurementLink: (measurementId: string) => string
+}
 
+/** The signed-in user's measurement sessions. */
+export const MeasurementList = ({ className }: MeasurementListProps) => (
+  <MeasurementListView
+    measurements={useMeasurements()}
+    getMeasurementLink={paths.measurement}
+    className={className}
+  />
+)
+
+/** Any sessions passed in, e.g. another user's in the admin panel. */
+export const MeasurementListView = ({
+  measurements,
+  getMeasurementLink,
+  className,
+}: MeasurementListViewProps) => {
   const sortedMeasurements = useMemo(() => sortMeasurementsDesc(measurements), [measurements])
 
   if (measurements.length === 0) {
@@ -26,7 +44,7 @@ export const MeasurementList = ({ className }: MeasurementListProps) => {
       {sortedMeasurements.map((measurement) => (
         <li key={measurement.id}>
           <Link
-            to={paths.measurement(measurement.id)}
+            to={getMeasurementLink(measurement.id)}
             className="flex flex-col gap-2 rounded-2xl bg-surface-muted p-4 transition-colors hover:bg-surface-muted/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary active:bg-surface-muted/60"
           >
             <div className="flex items-center justify-between gap-2">

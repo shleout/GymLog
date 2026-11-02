@@ -14,6 +14,11 @@ type MeasurementDetailsProps = {
   className?: string
 }
 
+type MeasurementDetailsViewProps = MeasurementDetailsProps & {
+  /** All active sessions of the same user: the "было" values come from earlier ones. */
+  measurements: Measurement[]
+}
+
 type Row = {
   key: string
   name: string
@@ -22,8 +27,20 @@ type Row = {
   previous?: MeasuredValue
 }
 
-export const MeasurementDetails = ({ measurement, className }: MeasurementDetailsProps) => {
-  const measurements = useMeasurements()
+export const MeasurementDetails = ({ measurement, className }: MeasurementDetailsProps) => (
+  <MeasurementDetailsView
+    measurement={measurement}
+    measurements={useMeasurements()}
+    className={className}
+  />
+)
+
+/** The same for a session of any user, e.g. in the admin panel. */
+export const MeasurementDetailsView = ({
+  measurement,
+  measurements,
+  className,
+}: MeasurementDetailsViewProps) => {
   const previous = useMemo(
     () => getPreviousValues(measurements, measurement),
     [measurements, measurement],

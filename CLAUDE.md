@@ -99,6 +99,10 @@
   (без веса — рекорды повторов за подход), getRecentChange (лучшее за 3 мес vs раньше). Подсказка
   «В прошлый раз / Рекорд на N» в форме — features/workout-form/model/useExerciseHint.ts.
 - График — свой SVG в shared/ui/LineChart.tsx (ось X по реальным датам), без библиотек.
+- Админ-панель (/admin, только просмотр чужих данных) — pages/admin, данные — entities/admin-user
+  (кеш в памяти, не persist, не sync), вход — карточка в профиле (useIsAdmin), гард RequireAdmin.
+  Экраны переиспользуют *View-версии виджетов (WorkoutListView, MeasurementChartView…): данные
+  пропсами вместо сторов. Роль — User.role в БД, выдаётся только SQL-ом. Подробности — docs/sync.md.
 
 ## Правила кода
 - Только функциональные компоненты и хуки. Компоненты — в сегменте ui слайса.

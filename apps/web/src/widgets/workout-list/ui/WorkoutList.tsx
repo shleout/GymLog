@@ -2,8 +2,8 @@ import { format, parseISO } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { useMemo } from 'react'
 import { Link } from 'react-router'
-import { useExerciseStore } from '@/entities/exercise'
-import { sortWorkoutsDesc, useWorkouts } from '@/entities/workout'
+import { useExerciseStore, type Exercise } from '@/entities/exercise'
+import { sortWorkoutsDesc, useWorkouts, type Workout } from '@/entities/workout'
 import { paths } from '@/shared/config'
 import { cn, formatNumber } from '@/shared/lib'
 
@@ -11,10 +11,35 @@ type WorkoutListProps = {
   className?: string
 }
 
+type WorkoutListViewProps = WorkoutListProps & {
+  /** Active workouts, in any order. */
+  workouts: Workout[]
+  /** Including deleted ones: they still name the entries that reference them. */
+  exercises: Exercise[]
+  getWorkoutLink: (workoutId: string) => string
+}
+
+/** The signed-in user's workouts. */
 export const WorkoutList = ({ className }: WorkoutListProps) => {
   const workouts = useWorkouts()
   const exercises = useExerciseStore((state) => state.exercises)
+  return (
+    <WorkoutListView
+      workouts={workouts}
+      exercises={exercises}
+      getWorkoutLink={paths.workout}
+      className={className}
+    />
+  )
+}
 
+/** Any workouts passed in, e.g. another user's in the admin panel. */
+export const WorkoutListView = ({
+  workouts,
+  exercises,
+  getWorkoutLink,
+  className,
+}: WorkoutListViewProps) => {
   const sortedWorkouts = useMemo(() => sortWorkoutsDesc(workouts), [workouts])
   const exerciseNames = useMemo(
     () => new Map(exercises.map((exercise) => [exercise.id, exercise.name])),
@@ -34,7 +59,7 @@ export const WorkoutList = ({ className }: WorkoutListProps) => {
       {sortedWorkouts.map((workout) => (
         <li key={workout.id}>
           <Link
-            to={paths.workout(workout.id)}
+            to={getWorkoutLink(workout.id)}
             className="flex flex-col gap-2 rounded-2xl bg-surface-muted p-4 transition-colors hover:bg-surface-muted/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary active:bg-surface-muted/60"
           >
             <div className="flex items-center justify-between gap-2">

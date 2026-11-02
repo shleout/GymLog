@@ -1,1 +1,1 @@
-export { LatestMeasurements } from './ui/LatestMeasurements'
+export { LatestMeasurements, LatestMeasurementsView } from './ui/LatestMeasurements'
