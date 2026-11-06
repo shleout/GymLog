@@ -1,13 +1,16 @@
 import { format, parseISO } from 'date-fns'
 import { useMemo, useState } from 'react'
+import { findExerciseByName, useExerciseStore, type Exercise } from '@/entities/exercise'
 import {
-  findExerciseByName,
-  useExercises,
-  useExerciseStore,
-  type Exercise,
-  type ExerciseKind,
-} from '@/entities/exercise'
-import { useWorkoutStore, type Workout, type WorkoutInput } from '@/entities/workout'
+  getExerciseSessions,
+  getLatestMode,
+  getSetMode,
+  selectActiveWorkouts,
+  useWorkoutStore,
+  type SetMode,
+  type Workout,
+  type WorkoutInput,
+} from '@/entities/workout'
 import { collectErrors, createId, splitDuration, usePersistentDraft } from '@/shared/lib'
 import { WorkoutDraftSchema, workoutDraftKey } from './draftStorage'
 import { WorkoutFormSchema } from './formSchema'
@@ -43,7 +46,8 @@ const workoutToDraft = (workout: Workout, exercises: Exercise[]): WorkoutDraft =
     return {
       key: createId(),
       name: exercise?.name ?? '',
-      kind: exercise?.kind ?? 'reps',
+      // An entry holds sets of one mode; an empty one falls back to reps.
+      kind: entry.sets[0] ? getSetMode(entry.sets[0]) : 'reps',
       sets: entry.sets.map((set) => ({
         key: set.id,
         weight: set.weight === undefined ? '' : String(set.weight),
@@ -60,14 +64,13 @@ const workoutToDraft = (workout: Workout, exercises: Exercise[]): WorkoutDraft =
   note: workout.note ?? '',
 })
 
-/** A known exercise decides its own kind; the draft's kind is only for a new name. */
-const resolveEntryKinds = (draft: WorkoutDraft, exercises: Exercise[]): WorkoutDraft => ({
-  ...draft,
-  entries: draft.entries.map((entry) => ({
-    ...entry,
-    kind: findExerciseByName(exercises, entry.name)?.kind ?? entry.kind,
-  })),
-})
+/** The mode the exercise was done in last time; `undefined` for an unknown or never done one. */
+const getLastMode = (name: string): SetMode | undefined => {
+  const exercise = findExerciseByName(useExerciseStore.getState().exercises, name)
+  if (!exercise) return undefined
+  const workouts = selectActiveWorkouts(useWorkoutStore.getState())
+  return getLatestMode(getExerciseSessions(workouts, exercise.id))
+}
 
 /**
  * Form state for creating a workout or, when `workout` is passed, editing it.
@@ -90,13 +93,12 @@ export const useWorkoutForm = (workout?: Workout) => {
   const addWorkout = useWorkoutStore((state) => state.addWorkout)
   const updateWorkout = useWorkoutStore((state) => state.updateWorkout)
   const ensureExercise = useExerciseStore((state) => state.ensureExercise)
-  const exercises = useExercises()
 
   const errors = useMemo<FormErrors>(() => {
     if (!submitted) return {}
-    const result = WorkoutFormSchema.safeParse(resolveEntryKinds(draft, exercises))
+    const result = WorkoutFormSchema.safeParse(draft)
     return result.success ? {} : collectErrors(result.error)
-  }, [draft, exercises, submitted])
+  }, [draft, submitted])
 
   const updateEntry = (entryKey: string, update: (entry: EntryDraft) => EntryDraft) =>
     setDraft((prev) => ({
@@ -117,10 +119,21 @@ export const useWorkoutForm = (workout?: Workout) => {
       entries: prev.entries.filter((entry) => entry.key !== entryKey),
     }))
 
+  /**
+   * Picking an exercise that was done before switches the entry to the mode it was done in
+   * last time. Only when the name starts to match a different exercise — not on every
+   * keystroke, so a manual choice of the mode isn't overridden while editing the name.
+   */
   const setEntryName = (entryKey: string, name: string) =>
-    updateEntry(entryKey, (entry) => ({ ...entry, name }))
+    updateEntry(entryKey, (entry) => {
+      const exercises = useExerciseStore.getState().exercises
+      const before = findExerciseByName(exercises, entry.name)
+      const after = findExerciseByName(exercises, name)
+      const kind = after && after.id !== before?.id ? (getLastMode(name) ?? entry.kind) : entry.kind
+      return { ...entry, name, kind }
+    })
 
-  const setEntryKind = (entryKey: string, kind: ExerciseKind) =>
+  const setEntryKind = (entryKey: string, kind: SetMode) =>
     updateEntry(entryKey, (entry) => ({ ...entry, kind }))
 
   const setEntryNote = (entryKey: string, note: string) =>
@@ -153,9 +166,7 @@ export const useWorkoutForm = (workout?: Workout) => {
   /** Validates the draft and saves the workout. Returns the saved workout id or `null`. */
   const submit = (): string | null => {
     setSubmitted(true)
-    const result = WorkoutFormSchema.safeParse(
-      resolveEntryKinds(draft, useExerciseStore.getState().exercises),
-    )
+    const result = WorkoutFormSchema.safeParse(draft)
     if (!result.success) return null
 
     // Keep the original timestamp when the day was not changed.
@@ -168,13 +179,13 @@ export const useWorkoutForm = (workout?: Workout) => {
       id: workout?.id ?? createId(),
       date,
       entries: result.data.entries.map((entry, entryIndex) => ({
-        exerciseId: ensureExercise(entry.name, entry.kind).id,
+        exerciseId: ensureExercise(entry.name).id,
         sets: entry.sets.map((set, setIndex) => {
           const setDraft = draft.entries[entryIndex].sets[setIndex]
           return {
             id: setDraft.key,
             weight: set.weight,
-            // Exactly one of the two: the entry kind decided what the form validated.
+            // Exactly one of the two: the entry mode decided what the form validated.
             ...('reps' in set ? { reps: set.reps } : { durationSec: set.durationSec }),
             rir: set.rir,
             completed: setDraft.completed,

@@ -20,12 +20,6 @@ enum UserRole {
   admin
 }
 
-/// `reps` — weight × reps sets; `time` — holds measured by time under load.
-enum ExerciseKind {
-  reps
-  time
-}
-
 model User {
   id           String   @id @default(uuid(7)) @db.Uuid
   email        String   @unique
@@ -85,11 +79,10 @@ model Workout {
 }
 
 model Exercise {
-  userId      String       @db.Uuid
+  userId      String    @db.Uuid
   id          String
   name        String
   muscleGroup String?
-  kind        ExerciseKind @default(reps)
   createdAt   DateTime
   updatedAt   DateTime
   deletedAt   DateTime?

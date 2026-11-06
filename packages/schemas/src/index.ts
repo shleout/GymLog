@@ -20,13 +20,7 @@ export {
   type User,
   type UserRole,
 } from './auth.js'
-export {
-  EXERCISE_KINDS,
-  ExerciseKindSchema,
-  ExerciseSchema,
-  type Exercise,
-  type ExerciseKind,
-} from './exercise.js'
+export { ExerciseSchema, type Exercise } from './exercise.js'
 export {
   MeasurementSchema,
   MeasurementValueSchema,

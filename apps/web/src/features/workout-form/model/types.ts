@@ -1,4 +1,4 @@
-import type { ExerciseKind } from '@/entities/exercise'
+import type { SetMode } from '@/entities/workout'
 
 /** Form draft keeps raw input strings; they are parsed by `WorkoutFormSchema` on submit. */
 export type SetDraft = {
@@ -6,7 +6,7 @@ export type SetDraft = {
   key: string
   weight: string
   reps: string
-  /** Duration of a hold (exercise kind `time`): minutes and seconds are separate fields. */
+  /** Duration of a hold (entry mode `time`): minutes and seconds are separate fields. */
   minutes: string
   seconds: string
   /** Reps in reserve; empty when not rated. */
@@ -21,10 +21,11 @@ export type EntryDraft = {
   key: string
   name: string
   /**
-   * Kind for a new exercise. For a known name the exercise's own kind wins
-   * (see `resolveEntryKinds`).
+   * How the sets of this entry are measured. Chosen per entry, not per exercise: the same
+   * exercise can be done for reps in one workout and as a hold in another. Fields of the
+   * other mode stay in the draft, so switching back and forth loses nothing.
    */
-  kind: ExerciseKind
+  kind: SetMode
   sets: SetDraft[]
   note: string
 }

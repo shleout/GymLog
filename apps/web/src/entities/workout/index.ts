@@ -32,3 +32,11 @@ export { getMaxRepsRecords, type MaxRepsRecord } from './lib/getMaxRepsRecords'
 export { getMaxTimeRecords, type MaxTimeRecord } from './lib/getMaxTimeRecords'
 export { getTimeRecord, getTimeRecords, type TimeRecord } from './lib/getTimeRecords'
 export { getRecentChange } from './lib/getRecentChange'
+export {
+  filterSessionsByMode,
+  getLatestMode,
+  getSessionModes,
+  getSetMode,
+  SET_MODES,
+  type SetMode,
+} from './lib/setMode'

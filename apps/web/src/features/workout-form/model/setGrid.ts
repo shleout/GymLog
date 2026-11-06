@@ -1,4 +1,4 @@
-import type { ExerciseKind } from '@/entities/exercise'
+import type { SetMode } from '@/entities/workout'
 
 /** Columns: #, weight, reps, RIR, remove. Shared with the header row in ExerciseEntryCard. */
 export const REPS_SET_GRID = 'grid-cols-[2rem_1fr_1fr_3rem_2.75rem]'
@@ -6,5 +6,5 @@ export const REPS_SET_GRID = 'grid-cols-[2rem_1fr_1fr_3rem_2.75rem]'
 export const TIME_SET_GRID = 'grid-cols-[2rem_1fr_3.5rem_3.5rem_3rem_2.75rem]'
 
 /** Grid of a set row; shared with the header row in ExerciseEntryCard. */
-export const getSetGrid = (kind: ExerciseKind): string =>
+export const getSetGrid = (kind: SetMode): string =>
   kind === 'time' ? TIME_SET_GRID : REPS_SET_GRID

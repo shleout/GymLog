@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { findExerciseByName, useExercises } from '@/entities/exercise'
 import {
+  filterSessionsByMode,
   getExerciseSessions,
   getMaxRepsRecords,
   getMaxTimeRecords,
@@ -11,6 +12,7 @@ import {
   type MaxRepsRecord,
   type MaxTimeRecord,
   type RepRecord,
+  type SetMode,
   type TimeRecord,
 } from '@/entities/workout'
 import { isoToDateInputValue } from '@/shared/lib'
@@ -18,6 +20,8 @@ import type { SetDraft } from './types'
 
 type ExerciseHintParams = {
   name: string
+  /** Mode of the entry: the hint shows only sets of that mode (reps and holds don't compare). */
+  kind: SetMode
   sets: SetDraft[]
   /** Draft date, `yyyy-MM-dd`: later workouts are not "last time" for it. */
   date: string
@@ -26,7 +30,8 @@ type ExerciseHintParams = {
 }
 
 export type ExerciseHint = {
-  last: ExerciseSession
+  /** Last workout with the exercise in the entry's mode; absent if it was only done the other way. */
+  last?: ExerciseSession
   /**
    * With weight — the heaviest set for the reps (or hold time) being entered, once they are
    * entered; without weight — the most reps (the longest hold) in one set.
@@ -64,7 +69,7 @@ const getCurrentDuration = (sets: SetDraft[]): number | undefined => {
 }
 
 /** What the user did with this exercise before: the last workout and the record for current reps. */
-export const useExerciseHint = ({ name, sets, date, workoutId }: ExerciseHintParams): ExerciseHint | undefined => {
+export const useExerciseHint = ({ name, kind, sets, date, workoutId }: ExerciseHintParams): ExerciseHint | undefined => {
   const exercises = useExercises()
   const workouts = useWorkouts()
   const exerciseId = findExerciseByName(exercises, name)?.id
@@ -80,17 +85,20 @@ export const useExerciseHint = ({ name, sets, date, workoutId }: ExerciseHintPar
     [workouts, exerciseId, workoutId, date],
   )
 
-  const last = sessions[0]
-  if (!last) return undefined
+  if (sessions.length === 0) return undefined
 
+  // The note is about the exercise itself (machine settings), whichever way it was done.
   const noted = sessions.find((session) => session.notes.length > 0)
   const note = noted && { session: noted, text: noted.notes.join('\n') }
 
-  const timed = sessions.some((session) => session.sets.some((set) => set.durationSec !== undefined))
-  const weighted = sessions.some((session) => session.sets.some((set) => set.weight !== undefined))
-  if (timed) {
+  const modeSessions = filterSessionsByMode(sessions, kind)
+  const last = modeSessions[0]
+  if (!last) return note ? { note } : undefined
+
+  const weighted = modeSessions.some((session) => session.sets.some((set) => set.weight !== undefined))
+  if (kind === 'time') {
     if (!weighted) {
-      const best = getMaxTimeRecords(sessions)[0]
+      const best = getMaxTimeRecords(modeSessions)[0]
       return { last, record: best ? { kind: 'hold', best } : undefined, note }
     }
     const durationSec = getCurrentDuration(sets)
@@ -99,18 +107,18 @@ export const useExerciseHint = ({ name, sets, date, workoutId }: ExerciseHintPar
       record:
         durationSec === undefined
           ? undefined
-          : { kind: 'holdWeight', durationSec, best: getTimeRecord(sessions, durationSec) },
+          : { kind: 'holdWeight', durationSec, best: getTimeRecord(modeSessions, durationSec) },
       note,
     }
   }
   if (!weighted) {
-    const best = getMaxRepsRecords(sessions)[0]
+    const best = getMaxRepsRecords(modeSessions)[0]
     return { last, record: best ? { kind: 'reps', best } : undefined, note }
   }
   const reps = getCurrentReps(sets)
   return {
     last,
-    record: reps === undefined ? undefined : { kind: 'weight', reps, best: getRepRecord(sessions, reps) },
+    record: reps === undefined ? undefined : { kind: 'weight', reps, best: getRepRecord(modeSessions, reps) },
     note,
   }
 }

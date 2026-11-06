@@ -51,7 +51,6 @@ export const workoutFromRow = (row: WorkoutRow): Workout => ({
 export const exerciseToRow = (exercise: Exercise) => ({
   name: exercise.name,
   muscleGroup: exercise.muscleGroup ?? null,
-  kind: exercise.kind,
   createdAt: toDate(exercise.createdAt),
   updatedAt: toDate(exercise.updatedAt),
   deletedAt: exercise.deletedAt === null ? null : toDate(exercise.deletedAt),
@@ -61,7 +60,6 @@ export const exerciseFromRow = (row: ExerciseRow): Exercise => ({
   id: row.id,
   name: row.name,
   ...optional('muscleGroup', row.muscleGroup),
-  kind: row.kind,
   createdAt: toIso(row.createdAt),
   updatedAt: toIso(row.updatedAt),
   deletedAt: toIsoOrNull(row.deletedAt),

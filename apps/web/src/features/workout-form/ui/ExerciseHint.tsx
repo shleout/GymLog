@@ -15,16 +15,18 @@ export const ExerciseHint = ({ hint }: ExerciseHintProps) => {
 
   return (
     <div className="flex flex-col gap-1 rounded-xl bg-surface-raised/60 px-3 py-2 text-sm">
-      <p>
-        <span className="text-text-muted">
-          В прошлый раз, {formatDay(last.date)}:
-        </span>{' '}
-        {last.sets.map(formatSetWithRir).join(' · ')}
-      </p>
+      {last && (
+        <p>
+          <span className="text-text-muted">
+            В прошлый раз, {formatDay(last.date)}:
+          </span>{' '}
+          {last.sets.map(formatSetWithRir).join(' · ')}
+        </p>
+      )}
       {note && (
         <p className="whitespace-pre-line">
           <span className="text-text-muted">
-            {note.session === last ? 'Заметка:' : `Заметка от ${formatDay(note.session.date)}:`}
+            {note.session.workoutId === last?.workoutId ? 'Заметка:' : `Заметка от ${formatDay(note.session.date)}:`}
           </span>{' '}
           {note.text}
         </p>

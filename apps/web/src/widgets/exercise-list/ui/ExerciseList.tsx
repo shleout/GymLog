@@ -4,8 +4,10 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { normalizeExerciseName, useExercises } from '@/entities/exercise'
 import {
+  filterSessionsByMode,
   getExerciseProgress,
   getExerciseSessions,
+  getLatestMode,
   getRecentChange,
   useWorkouts,
 } from '@/entities/workout'
@@ -56,7 +58,10 @@ export const ExerciseList = ({ className }: ExerciseListProps) => {
           const sessions = getExerciseSessions(workouts, exercise.id)
           if (sessions.length === 0) return { ...base, details: 'Ещё не выполнялось' }
 
-          const progress = getExerciseProgress(sessions)
+          // Reps and holds are not comparable: the row shows the way it was done last.
+          const progress = getExerciseProgress(
+            filterSessionsByMode(sessions, getLatestMode(sessions) ?? 'reps'),
+          )
           const best = Math.max(...progress.points.map((point) => point.value))
           return {
             ...base,

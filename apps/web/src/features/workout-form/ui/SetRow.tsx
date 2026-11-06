@@ -1,4 +1,4 @@
-import type { ExerciseKind } from '@/entities/exercise'
+import type { SetMode } from '@/entities/workout'
 import { cn } from '@/shared/lib'
 import { Button, Input } from '@/shared/ui'
 import { getSetGrid } from '../model/setGrid'
@@ -6,7 +6,7 @@ import type { SetDraft, SetField } from '../model/types'
 
 type SetRowProps = {
   index: number
-  kind: ExerciseKind
+  kind: SetMode
   set: SetDraft
   weightError?: string
   repsError?: string

@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { z } from 'zod'
-import { ExerciseKindSchema } from '@/entities/exercise'
 import { hasDraft } from '@/shared/lib'
 import type { WorkoutDraft } from './types'
 
@@ -22,7 +21,7 @@ export const WorkoutDraftSchema: z.ZodType<WorkoutDraft> = z.object({
     z.object({
       key: z.string(),
       name: z.string(),
-      kind: ExerciseKindSchema.default('reps'),
+      kind: z.enum(['reps', 'time']).default('reps'),
       sets: z.array(SetDraftSchema),
       note: z.string().default(''),
     }),

@@ -1,9 +1,5 @@
-import {
-  findExerciseByName,
-  normalizeExerciseName,
-  useExercises,
-  type ExerciseKind,
-} from '@/entities/exercise'
+import { normalizeExerciseName } from '@/entities/exercise'
+import type { SetMode } from '@/entities/workout'
 import { Button, Combobox, SegmentedControl } from '@/shared/ui'
 import { cn } from '@/shared/lib'
 import { getSetGrid } from '../model/setGrid'
@@ -13,7 +9,7 @@ import { ExerciseHint } from './ExerciseHint'
 import { NoteField } from './NoteField'
 import { SetRow } from './SetRow'
 
-const KIND_OPTIONS: { value: ExerciseKind; label: string }[] = [
+const KIND_OPTIONS: { value: SetMode; label: string }[] = [
   { value: 'reps', label: 'Повторы' },
   { value: 'time', label: 'Время' },
 ]
@@ -28,7 +24,7 @@ type ExerciseEntryCardProps = {
   exerciseOptions: string[]
   canRemove: boolean
   onNameChange: (name: string) => void
-  onKindChange: (kind: ExerciseKind) => void
+  onKindChange: (kind: SetMode) => void
   onNoteChange: (note: string) => void
   onRemove: () => void
   onAddSet: () => void
@@ -55,10 +51,8 @@ export const ExerciseEntryCard = ({
   const path = `entries.${index}`
   const nameError = errors[`${path}.name`]
   const setsError = errors[`${path}.sets`]
-  // A known exercise has its own kind; the choice is offered only for a new name.
-  const existing = findExerciseByName(useExercises(), entry.name)
-  const kind = existing?.kind ?? entry.kind
-  const hint = useExerciseHint({ name: entry.name, sets: entry.sets, date, workoutId })
+  const kind = entry.kind
+  const hint = useExerciseHint({ name: entry.name, kind, sets: entry.sets, date, workoutId })
 
   return (
     <section className="flex flex-col gap-3 rounded-2xl bg-surface-muted p-4">
@@ -87,14 +81,12 @@ export const ExerciseEntryCard = ({
         )}
       </div>
 
-      {entry.name.trim() && !existing && (
-        <SegmentedControl
-          aria-label="Тип нового упражнения"
-          options={KIND_OPTIONS}
-          value={kind}
-          onChange={onKindChange}
-        />
-      )}
+      <SegmentedControl
+        aria-label="Как считать подходы"
+        options={KIND_OPTIONS}
+        value={kind}
+        onChange={onKindChange}
+      />
 
       {hint && <ExerciseHint hint={hint} />}
 
