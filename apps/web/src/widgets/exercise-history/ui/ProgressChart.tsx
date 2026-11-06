@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Link } from 'react-router'
 import { formatSet, type ExerciseProgress, type ProgressPoint } from '@/entities/workout'
 import { paths } from '@/shared/config'
-import { cn, formatNumber } from '@/shared/lib'
+import { cn, formatDuration, formatNumber } from '@/shared/lib'
 import { Chip, LineChart, type ChartSeries } from '@/shared/ui'
 import { formatShortDate } from '../lib/formatDate'
 import { formatProgressValue } from '../lib/formatProgressValue'
@@ -22,6 +22,12 @@ const PERIODS: { value: Period; label: string; since: (now: Date) => Date | null
   { value: '1y', label: 'Год', since: (now) => subYears(now, 1) },
   { value: 'all', label: 'Всё', since: () => null },
 ]
+
+const CHART_LABELS: Record<ProgressChartProps['progress']['kind'], string> = {
+  weight: 'График 1ПМ, кг',
+  reps: 'График повторений',
+  time: 'График времени удержания',
+}
 
 const SERIES_LABELS: Record<SeriesId, string> = { estimate: 'Расчётный', singles: 'На раз' }
 
@@ -45,7 +51,10 @@ export const ProgressChart = ({ progress }: ProgressChartProps) => {
   }
 
   // Bodyweight exercises have one series: the most reps, not an estimate.
-  const seriesLabel = (id: SeriesId) => (progress.kind === 'reps' ? 'Лучший подход' : SERIES_LABELS[id])
+  const seriesLabel = (id: SeriesId) => {
+    if (progress.kind === 'time') return 'Лучшее удержание'
+    return progress.kind === 'reps' ? 'Лучший подход' : SERIES_LABELS[id]
+  }
 
   const toChartSeries = (id: SeriesId, tone: ChartSeries['tone'], dashed: boolean): ChartSeries => ({
     id,
@@ -116,12 +125,12 @@ export const ProgressChart = ({ progress }: ProgressChartProps) => {
           <p className="py-16 text-center text-text-muted">Нет тренировок за этот период</p>
         ) : (
           <LineChart
-            aria-label={progress.kind === 'weight' ? 'График 1ПМ, кг' : 'График повторений'}
+            aria-label={CHART_LABELS[progress.kind]}
             series={series}
             selectedKey={selectedKey}
             onSelect={setSelectedKey}
             formatX={(x) => format(x, 'd MMM', { locale: ru })}
-            formatY={(y) => formatNumber(y)}
+            formatY={(y) => (progress.kind === 'time' ? formatDuration(Math.round(y)) : formatNumber(y))}
           />
         )}
       </div>

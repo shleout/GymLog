@@ -1,15 +1,16 @@
+import type { ExerciseKind } from '@/entities/exercise'
 import { cn } from '@/shared/lib'
 import { Button, Input } from '@/shared/ui'
+import { getSetGrid } from '../model/setGrid'
 import type { SetDraft, SetField } from '../model/types'
-
-/** Columns: #, weight, reps, RIR, remove. Shared with the header row in ExerciseEntryCard. */
-export const SET_GRID = 'grid-cols-[2rem_1fr_1fr_3rem_2.75rem]'
 
 type SetRowProps = {
   index: number
+  kind: ExerciseKind
   set: SetDraft
   weightError?: string
   repsError?: string
+  durationError?: string
   rirError?: string
   canRemove: boolean
   onChange: (field: SetField, value: string) => void
@@ -18,16 +19,18 @@ type SetRowProps = {
 
 export const SetRow = ({
   index,
+  kind,
   set,
   weightError,
   repsError,
+  durationError,
   rirError,
   canRemove,
   onChange,
   onRemove,
 }: SetRowProps) => (
   <li className="flex flex-col gap-1">
-    <div className={cn('grid items-center gap-2', SET_GRID)}>
+    <div className={cn('grid items-center gap-2', getSetGrid(kind))}>
       <span className="text-center font-semibold text-text-muted">{index + 1}</span>
       <Input
         inputMode="decimal"
@@ -37,14 +40,37 @@ export const SetRow = ({
         invalid={Boolean(weightError)}
         onChange={(event) => onChange('weight', event.target.value)}
       />
-      <Input
-        inputMode="numeric"
-        placeholder="0"
-        aria-label={`Повторения, подход ${index + 1}`}
-        value={set.reps}
-        invalid={Boolean(repsError)}
-        onChange={(event) => onChange('reps', event.target.value)}
-      />
+      {kind === 'time' ? (
+        <>
+          <Input
+            inputMode="numeric"
+            placeholder="0"
+            aria-label={`Минуты, подход ${index + 1}`}
+            className="px-1 text-center"
+            value={set.minutes}
+            invalid={Boolean(durationError)}
+            onChange={(event) => onChange('minutes', event.target.value)}
+          />
+          <Input
+            inputMode="numeric"
+            placeholder="0"
+            aria-label={`Секунды, подход ${index + 1}`}
+            className="px-1 text-center"
+            value={set.seconds}
+            invalid={Boolean(durationError)}
+            onChange={(event) => onChange('seconds', event.target.value)}
+          />
+        </>
+      ) : (
+        <Input
+          inputMode="numeric"
+          placeholder="0"
+          aria-label={`Повторения, подход ${index + 1}`}
+          value={set.reps}
+          invalid={Boolean(repsError)}
+          onChange={(event) => onChange('reps', event.target.value)}
+        />
+      )}
       <Input
         inputMode="numeric"
         placeholder="—"
@@ -62,9 +88,9 @@ export const SetRow = ({
         <span />
       )}
     </div>
-    {(weightError || repsError || rirError) && (
+    {(weightError || repsError || durationError || rirError) && (
       <p className="pl-10 text-sm text-danger">
-        {weightError ?? repsError ?? (rirError && `RIR: ${rirError}`)}
+        {weightError ?? repsError ?? durationError ?? (rirError && `RIR: ${rirError}`)}
       </p>
     )}
   </li>

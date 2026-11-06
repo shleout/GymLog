@@ -12,29 +12,47 @@ const NoteSchema = z
 
 export const RIR_MAX = 10
 
-export const SetSchema = z.object({
-  id: z.string().min(1),
-  /** Working or additional weight in kg; omitted for bodyweight sets. */
-  weight: z
-    .number({ error: 'Введите число' })
-    .positive('Вес должен быть больше 0')
-    .refine((value) => Number.isInteger(value * 2), { message: 'Шаг веса — 0,5 кг' })
-    .optional(),
-  reps: z
-    .number({
-      error: (issue) => (issue.input === undefined ? 'Укажите повторения' : 'Введите число'),
-    })
-    .int('Целое число')
-    .positive('Больше 0'),
-  completed: z.boolean(),
-  /** Reps in reserve: how many more reps were left in the tank; omitted when not rated. */
-  rir: z
-    .number({ error: 'Введите число' })
-    .int('Целое число')
-    .min(0, 'От 0')
-    .max(RIR_MAX, `До ${RIR_MAX}`)
-    .optional(),
-})
+/** Upper bound of one timed set: 3 hours. */
+export const DURATION_MAX_SEC = 3 * 60 * 60
+
+export const RepsSchema = z
+  .number({
+    error: (issue) => (issue.input === undefined ? 'Укажите повторения' : 'Введите число'),
+  })
+  .int('Целое число')
+  .positive('Больше 0')
+
+export const DurationSecSchema = z
+  .number({ error: 'Введите время' })
+  .int('Целое число')
+  .positive('Больше 0')
+  .max(DURATION_MAX_SEC, 'Слишком долго')
+
+export const SetSchema = z
+  .object({
+    id: z.string().min(1),
+    /** Working or additional weight in kg; omitted for bodyweight sets. */
+    weight: z
+      .number({ error: 'Введите число' })
+      .positive('Вес должен быть больше 0')
+      .refine((value) => Number.isInteger(value * 2), { message: 'Шаг веса — 0,5 кг' })
+      .optional(),
+    /** Reps of a regular set; omitted for a timed set (`durationSec` instead). */
+    reps: RepsSchema.optional(),
+    /** Time under load of a timed set (a hold), seconds; omitted for a regular set. */
+    durationSec: DurationSecSchema.optional(),
+    completed: z.boolean(),
+    /** Reps in reserve: how many more reps were left in the tank; omitted when not rated. */
+    rir: z
+      .number({ error: 'Введите число' })
+      .int('Целое число')
+      .min(0, 'От 0')
+      .max(RIR_MAX, `До ${RIR_MAX}`)
+      .optional(),
+  })
+  .refine((set) => (set.reps === undefined) !== (set.durationSec === undefined), {
+    message: 'Укажите повторения или время',
+  })
 
 export const WorkoutEntrySchema = z.object({
   exerciseId: z.string().min(1),

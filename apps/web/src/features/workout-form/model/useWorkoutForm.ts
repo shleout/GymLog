@@ -1,8 +1,14 @@
 import { format, parseISO } from 'date-fns'
 import { useMemo, useState } from 'react'
-import { useExerciseStore, type Exercise } from '@/entities/exercise'
+import {
+  findExerciseByName,
+  useExercises,
+  useExerciseStore,
+  type Exercise,
+  type ExerciseKind,
+} from '@/entities/exercise'
 import { useWorkoutStore, type Workout, type WorkoutInput } from '@/entities/workout'
-import { collectErrors, createId, usePersistentDraft } from '@/shared/lib'
+import { collectErrors, createId, splitDuration, usePersistentDraft } from '@/shared/lib'
 import { WorkoutDraftSchema, workoutDraftKey } from './draftStorage'
 import { WorkoutFormSchema } from './formSchema'
 import type { EntryDraft, FormErrors, SetDraft, SetField, WorkoutDraft } from './types'
@@ -13,6 +19,8 @@ const createSetDraft = (from?: SetDraft): SetDraft => ({
   key: createId(),
   weight: from?.weight ?? '',
   reps: from?.reps ?? '',
+  minutes: from?.minutes ?? '',
+  seconds: from?.seconds ?? '',
   // Not copied: effort changes from set to set, a copied value would be a guess.
   rir: '',
   completed: true,
@@ -21,6 +29,7 @@ const createSetDraft = (from?: SetDraft): SetDraft => ({
 const createEntryDraft = (): EntryDraft => ({
   key: createId(),
   name: '',
+  kind: 'reps',
   sets: [createSetDraft()],
   note: '',
 })
@@ -29,19 +38,35 @@ const getToday = (): string => format(new Date(), DATE_INPUT_FORMAT)
 
 const workoutToDraft = (workout: Workout, exercises: Exercise[]): WorkoutDraft => ({
   date: format(parseISO(workout.date), DATE_INPUT_FORMAT),
-  entries: workout.entries.map((entry) => ({
-    key: createId(),
-    name: exercises.find((exercise) => exercise.id === entry.exerciseId)?.name ?? '',
-    sets: entry.sets.map((set) => ({
-      key: set.id,
-      weight: set.weight === undefined ? '' : String(set.weight),
-      reps: String(set.reps),
-      rir: set.rir === undefined ? '' : String(set.rir),
-      completed: set.completed,
-    })),
-    note: entry.note ?? '',
-  })),
+  entries: workout.entries.map((entry) => {
+    const exercise = exercises.find((item) => item.id === entry.exerciseId)
+    return {
+      key: createId(),
+      name: exercise?.name ?? '',
+      kind: exercise?.kind ?? 'reps',
+      sets: entry.sets.map((set) => ({
+        key: set.id,
+        weight: set.weight === undefined ? '' : String(set.weight),
+        reps: set.reps === undefined ? '' : String(set.reps),
+        ...(set.durationSec === undefined
+          ? { minutes: '', seconds: '' }
+          : splitDuration(set.durationSec)),
+        rir: set.rir === undefined ? '' : String(set.rir),
+        completed: set.completed,
+      })),
+      note: entry.note ?? '',
+    }
+  }),
   note: workout.note ?? '',
+})
+
+/** A known exercise decides its own kind; the draft's kind is only for a new name. */
+const resolveEntryKinds = (draft: WorkoutDraft, exercises: Exercise[]): WorkoutDraft => ({
+  ...draft,
+  entries: draft.entries.map((entry) => ({
+    ...entry,
+    kind: findExerciseByName(exercises, entry.name)?.kind ?? entry.kind,
+  })),
 })
 
 /**
@@ -65,12 +90,13 @@ export const useWorkoutForm = (workout?: Workout) => {
   const addWorkout = useWorkoutStore((state) => state.addWorkout)
   const updateWorkout = useWorkoutStore((state) => state.updateWorkout)
   const ensureExercise = useExerciseStore((state) => state.ensureExercise)
+  const exercises = useExercises()
 
   const errors = useMemo<FormErrors>(() => {
     if (!submitted) return {}
-    const result = WorkoutFormSchema.safeParse(draft)
+    const result = WorkoutFormSchema.safeParse(resolveEntryKinds(draft, exercises))
     return result.success ? {} : collectErrors(result.error)
-  }, [draft, submitted])
+  }, [draft, exercises, submitted])
 
   const updateEntry = (entryKey: string, update: (entry: EntryDraft) => EntryDraft) =>
     setDraft((prev) => ({
@@ -93,6 +119,9 @@ export const useWorkoutForm = (workout?: Workout) => {
 
   const setEntryName = (entryKey: string, name: string) =>
     updateEntry(entryKey, (entry) => ({ ...entry, name }))
+
+  const setEntryKind = (entryKey: string, kind: ExerciseKind) =>
+    updateEntry(entryKey, (entry) => ({ ...entry, kind }))
 
   const setEntryNote = (entryKey: string, note: string) =>
     updateEntry(entryKey, (entry) => ({ ...entry, note }))
@@ -124,7 +153,9 @@ export const useWorkoutForm = (workout?: Workout) => {
   /** Validates the draft and saves the workout. Returns the saved workout id or `null`. */
   const submit = (): string | null => {
     setSubmitted(true)
-    const result = WorkoutFormSchema.safeParse(draft)
+    const result = WorkoutFormSchema.safeParse(
+      resolveEntryKinds(draft, useExerciseStore.getState().exercises),
+    )
     if (!result.success) return null
 
     // Keep the original timestamp when the day was not changed.
@@ -137,13 +168,14 @@ export const useWorkoutForm = (workout?: Workout) => {
       id: workout?.id ?? createId(),
       date,
       entries: result.data.entries.map((entry, entryIndex) => ({
-        exerciseId: ensureExercise(entry.name).id,
+        exerciseId: ensureExercise(entry.name, entry.kind).id,
         sets: entry.sets.map((set, setIndex) => {
           const setDraft = draft.entries[entryIndex].sets[setIndex]
           return {
             id: setDraft.key,
             weight: set.weight,
-            reps: set.reps,
+            // Exactly one of the two: the entry kind decided what the form validated.
+            ...('reps' in set ? { reps: set.reps } : { durationSec: set.durationSec }),
             rir: set.rir,
             completed: setDraft.completed,
           }
@@ -181,6 +213,7 @@ export const useWorkoutForm = (workout?: Workout) => {
     addEntry,
     removeEntry,
     setEntryName,
+    setEntryKind,
     setEntryNote,
     addSet,
     removeSet,

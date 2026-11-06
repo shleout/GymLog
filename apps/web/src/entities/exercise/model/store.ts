@@ -15,16 +15,17 @@ import { findExerciseByName } from '../lib/findExerciseByName'
 import { normalizeExerciseName } from '../lib/normalizeExerciseName'
 import { EXERCISE_STATE_VERSION, migrateExerciseState } from './migrations'
 import { ExerciseSchema } from './schemas'
-import type { Exercise, ExerciseState } from './types'
+import type { Exercise, ExerciseKind, ExerciseState } from './types'
 
 const STORAGE_KEY = 'gymlog-exercises'
 
 type ExerciseActions = {
   /**
    * Returns the active exercise with this name, restores a deleted one (keeping its id, so
-   * old workouts and history stay attached) or creates a new one.
+   * old workouts and history stay attached) or creates a new one. `kind` only matters for a
+   * new exercise: an existing one keeps its own.
    */
-  ensureExercise: (name: string) => Exercise
+  ensureExercise: (name: string, kind?: ExerciseKind) => Exercise
   /** The caller checks that the name is not empty and not taken by another exercise. */
   renameExercise: (id: string, name: string) => void
   /** Records from the server, merged last-write-wins; `updatedAt` is kept as is. */
@@ -39,7 +40,7 @@ export const useExerciseStore = create<ExerciseStore>()(
   persist(
     (set, get): ExerciseStore => ({
       exercises: [],
-      ensureExercise: (name) => {
+      ensureExercise: (name, kind = 'reps') => {
         const existing = findExerciseByName(get().exercises, name)
         if (existing) return existing
 
@@ -62,7 +63,12 @@ export const useExerciseStore = create<ExerciseStore>()(
           return restored
         }
 
-        const exercise: Exercise = { id: createId(), name: cleanName(name), ...createSyncMeta() }
+        const exercise: Exercise = {
+          id: createId(),
+          name: cleanName(name),
+          kind,
+          ...createSyncMeta(),
+        }
         set((state) => ({ exercises: [...state.exercises, exercise] }))
         return exercise
       },

@@ -6,6 +6,7 @@ export {
   getTodayInputValue,
   isoToDateInputValue,
 } from './dateInput'
+export { formatDuration, splitDuration } from './duration'
 export { collectErrors, parseDecimal, type FormErrors } from './form'
 export { formatDiff, formatNumber } from './formatNumber'
 export { isNewer, mergeRemote } from './lww'

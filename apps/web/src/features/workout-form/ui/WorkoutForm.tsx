@@ -64,6 +64,7 @@ export const WorkoutForm = ({ workout, onSuccess }: WorkoutFormProps) => {
           exerciseOptions={exerciseOptions}
           canRemove={form.draft.entries.length > 1}
           onNameChange={(name) => form.setEntryName(entry.key, name)}
+          onKindChange={(kind) => form.setEntryKind(entry.key, kind)}
           onNoteChange={(note) => form.setEntryNote(entry.key, note)}
           onRemove={() => form.removeEntry(entry.key)}
           onAddSet={() => form.addSet(entry.key)}

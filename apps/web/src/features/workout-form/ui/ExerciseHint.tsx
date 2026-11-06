@@ -1,7 +1,7 @@
 import { format, parseISO } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { formatSet, formatSetWithRir } from '@/entities/workout'
-import { formatNumber } from '@/shared/lib'
+import { formatDuration, formatNumber } from '@/shared/lib'
 import type { ExerciseHint as Hint } from '../model/useExerciseHint'
 
 const formatDay = (iso: string): string => format(parseISO(iso), 'd MMM', { locale: ru })
@@ -33,6 +33,30 @@ export const ExerciseHint = ({ hint }: ExerciseHintProps) => {
         <p>
           <span className="text-text-muted">Рекорд за подход:</span>{' '}
           <span className="font-semibold text-primary">{record.best.reps} повт.</span>
+        </p>
+      )}
+      {record?.kind === 'hold' && (
+        <p>
+          <span className="text-text-muted">Рекорд удержания:</span>{' '}
+          <span className="font-semibold text-primary">{formatDuration(record.best.durationSec)}</span>
+        </p>
+      )}
+      {record?.kind === 'holdWeight' && (
+        <p>
+          <span className="text-text-muted">Рекорд на {formatDuration(record.durationSec)}:</span>{' '}
+          {record.best ? (
+            <>
+              <span className="font-semibold text-primary">{formatNumber(record.best.weight)} кг</span>
+              {record.best.durationSec !== record.durationSec && (
+                <span className="text-text-muted">
+                  {' '}
+                  ({formatSet(record.best)})
+                </span>
+              )}
+            </>
+          ) : (
+            <span className="text-text-muted">столько с весом ещё не держали</span>
+          )}
         </p>
       )}
       {record?.kind === 'weight' && (

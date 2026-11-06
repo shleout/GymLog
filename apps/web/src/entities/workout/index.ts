@@ -1,6 +1,8 @@
 export type { Set, Workout, WorkoutEntry, WorkoutInput, WorkoutState } from './model/types'
 export {
+  DurationSecSchema,
   NOTE_MAX_LENGTH,
+  RepsSchema,
   RIR_MAX,
   SetSchema,
   WorkoutEntrySchema,
@@ -27,4 +29,6 @@ export {
 export { getExerciseSessions, type ExerciseSession } from './lib/getExerciseSessions'
 export { getRepRecord, getRepRecords, type RepRecord } from './lib/getRepRecords'
 export { getMaxRepsRecords, type MaxRepsRecord } from './lib/getMaxRepsRecords'
+export { getMaxTimeRecords, type MaxTimeRecord } from './lib/getMaxTimeRecords'
+export { getTimeRecord, getTimeRecords, type TimeRecord } from './lib/getTimeRecords'
 export { getRecentChange } from './lib/getRecentChange'

@@ -3,7 +3,7 @@ import { ru } from 'date-fns/locale'
 import { useMemo } from 'react'
 import { Link } from 'react-router'
 import { useExerciseStore, type Exercise } from '@/entities/exercise'
-import { sortWorkoutsDesc, useWorkouts, type Workout } from '@/entities/workout'
+import { formatSet, sortWorkoutsDesc, useWorkouts, type Workout } from '@/entities/workout'
 import { paths } from '@/shared/config'
 import { cn, formatNumber } from '@/shared/lib'
 
@@ -77,9 +77,11 @@ export const WorkoutListView = ({
                   <span>
                     {entry.sets
                       .map((set) =>
-                        set.weight === undefined
-                          ? `${set.reps}`
-                          : `${formatNumber(set.weight)}×${set.reps}`,
+                        set.durationSec !== undefined
+                          ? formatSet(set)
+                          : set.weight === undefined
+                            ? `${set.reps}`
+                            : `${formatNumber(set.weight)}×${set.reps}`,
                       )
                       .join(', ')}
                   </span>

@@ -3,7 +3,9 @@ import {
   getExerciseProgress,
   getExerciseSessions,
   getMaxRepsRecords,
+  getMaxTimeRecords,
   getRepRecords,
+  getTimeRecords,
   useWorkouts,
 } from '@/entities/workout'
 import { cn } from '@/shared/lib'
@@ -35,6 +37,8 @@ export const ExerciseHistory = ({ exerciseId, className }: ExerciseHistoryProps)
   const progress = useMemo(() => getExerciseProgress(sessions), [sessions])
   const repRecords = useMemo(() => getRepRecords(sessions), [sessions])
   const maxRepsRecords = useMemo(() => getMaxRepsRecords(sessions), [sessions])
+  const timeRecords = useMemo(() => getTimeRecords(sessions), [sessions])
+  const maxTimeRecords = useMemo(() => getMaxTimeRecords(sessions), [sessions])
 
   if (sessions.length === 0) {
     return (
@@ -54,12 +58,18 @@ export const ExerciseHistory = ({ exerciseId, className }: ExerciseHistoryProps)
         onChange={setSection}
       />
       {section === 'chart' && <ProgressChart progress={progress} />}
-      {section === 'records' &&
-        (progress.kind === 'weight' ? (
-          <RecordsTable kind="weight" records={repRecords} />
+      {section === 'records' && progress.kind === 'time' &&
+        (timeRecords.length > 0 ? (
+          <RecordsTable kind="holdWeight" records={timeRecords} />
         ) : (
-          <RecordsTable kind="reps" records={maxRepsRecords} />
+          <RecordsTable kind="hold" records={maxTimeRecords} />
         ))}
+      {section === 'records' && progress.kind === 'weight' && (
+        <RecordsTable kind="weight" records={repRecords} />
+      )}
+      {section === 'records' && progress.kind === 'reps' && (
+        <RecordsTable kind="reps" records={maxRepsRecords} />
+      )}
       {section === 'history' && <SessionList sessions={sessions} points={progress.points} />}
     </div>
   )

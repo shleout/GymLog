@@ -3,11 +3,15 @@ import { findExerciseByName, useExercises } from '@/entities/exercise'
 import {
   getExerciseSessions,
   getMaxRepsRecords,
+  getMaxTimeRecords,
   getRepRecord,
+  getTimeRecord,
   useWorkouts,
   type ExerciseSession,
   type MaxRepsRecord,
+  type MaxTimeRecord,
   type RepRecord,
+  type TimeRecord,
 } from '@/entities/workout'
 import { isoToDateInputValue } from '@/shared/lib'
 import type { SetDraft } from './types'
@@ -24,10 +28,14 @@ type ExerciseHintParams = {
 export type ExerciseHint = {
   last: ExerciseSession
   /**
-   * With weight — the heaviest set for the reps being entered (once they are entered);
-   * without weight — the most reps in one set.
+   * With weight — the heaviest set for the reps (or hold time) being entered, once they are
+   * entered; without weight — the most reps (the longest hold) in one set.
    */
-  record?: { kind: 'weight'; reps: number; best?: RepRecord } | { kind: 'reps'; best: MaxRepsRecord }
+  record?:
+    | { kind: 'weight'; reps: number; best?: RepRecord }
+    | { kind: 'reps'; best: MaxRepsRecord }
+    | { kind: 'holdWeight'; durationSec: number; best?: TimeRecord }
+    | { kind: 'hold'; best: MaxTimeRecord }
   /**
    * The latest note about the exercise, even if it was left several workouts ago:
    * notes like machine settings are written once and stay relevant.
@@ -40,6 +48,17 @@ const getCurrentReps = (sets: SetDraft[]): number | undefined => {
   for (const set of [...sets].reverse()) {
     const reps = Number(set.reps.trim())
     if (set.reps.trim() && Number.isInteger(reps) && reps > 0) return reps
+  }
+  return undefined
+}
+
+/** Seconds of the last set with a valid duration: usually the one being typed. */
+const getCurrentDuration = (sets: SetDraft[]): number | undefined => {
+  for (const set of [...sets].reverse()) {
+    const minutes = Number(set.minutes.trim() || 0)
+    const seconds = Number(set.seconds.trim() || 0)
+    const total = minutes * 60 + seconds
+    if (Number.isInteger(total) && total > 0 && minutes >= 0 && seconds >= 0) return total
   }
   return undefined
 }
@@ -67,7 +86,23 @@ export const useExerciseHint = ({ name, sets, date, workoutId }: ExerciseHintPar
   const noted = sessions.find((session) => session.notes.length > 0)
   const note = noted && { session: noted, text: noted.notes.join('\n') }
 
+  const timed = sessions.some((session) => session.sets.some((set) => set.durationSec !== undefined))
   const weighted = sessions.some((session) => session.sets.some((set) => set.weight !== undefined))
+  if (timed) {
+    if (!weighted) {
+      const best = getMaxTimeRecords(sessions)[0]
+      return { last, record: best ? { kind: 'hold', best } : undefined, note }
+    }
+    const durationSec = getCurrentDuration(sets)
+    return {
+      last,
+      record:
+        durationSec === undefined
+          ? undefined
+          : { kind: 'holdWeight', durationSec, best: getTimeRecord(sessions, durationSec) },
+      note,
+    }
+  }
   if (!weighted) {
     const best = getMaxRepsRecords(sessions)[0]
     return { last, record: best ? { kind: 'reps', best } : undefined, note }

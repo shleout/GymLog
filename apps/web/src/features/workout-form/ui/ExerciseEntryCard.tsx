@@ -1,11 +1,22 @@
-import { normalizeExerciseName } from '@/entities/exercise'
-import { Button, Combobox } from '@/shared/ui'
+import {
+  findExerciseByName,
+  normalizeExerciseName,
+  useExercises,
+  type ExerciseKind,
+} from '@/entities/exercise'
+import { Button, Combobox, SegmentedControl } from '@/shared/ui'
 import { cn } from '@/shared/lib'
+import { getSetGrid } from '../model/setGrid'
 import type { EntryDraft, FormErrors, SetField } from '../model/types'
 import { useExerciseHint } from '../model/useExerciseHint'
 import { ExerciseHint } from './ExerciseHint'
 import { NoteField } from './NoteField'
-import { SET_GRID, SetRow } from './SetRow'
+import { SetRow } from './SetRow'
+
+const KIND_OPTIONS: { value: ExerciseKind; label: string }[] = [
+  { value: 'reps', label: 'Повторы' },
+  { value: 'time', label: 'Время' },
+]
 
 type ExerciseEntryCardProps = {
   index: number
@@ -17,6 +28,7 @@ type ExerciseEntryCardProps = {
   exerciseOptions: string[]
   canRemove: boolean
   onNameChange: (name: string) => void
+  onKindChange: (kind: ExerciseKind) => void
   onNoteChange: (note: string) => void
   onRemove: () => void
   onAddSet: () => void
@@ -33,6 +45,7 @@ export const ExerciseEntryCard = ({
   exerciseOptions,
   canRemove,
   onNameChange,
+  onKindChange,
   onNoteChange,
   onRemove,
   onAddSet,
@@ -42,6 +55,9 @@ export const ExerciseEntryCard = ({
   const path = `entries.${index}`
   const nameError = errors[`${path}.name`]
   const setsError = errors[`${path}.sets`]
+  // A known exercise has its own kind; the choice is offered only for a new name.
+  const existing = findExerciseByName(useExercises(), entry.name)
+  const kind = existing?.kind ?? entry.kind
   const hint = useExerciseHint({ name: entry.name, sets: entry.sets, date, workoutId })
 
   return (
@@ -71,12 +87,28 @@ export const ExerciseEntryCard = ({
         )}
       </div>
 
+      {entry.name.trim() && !existing && (
+        <SegmentedControl
+          aria-label="Тип нового упражнения"
+          options={KIND_OPTIONS}
+          value={kind}
+          onChange={onKindChange}
+        />
+      )}
+
       {hint && <ExerciseHint hint={hint} />}
 
-      <div className={cn('grid gap-2 text-xs font-medium uppercase text-text-muted', SET_GRID)}>
+      <div className={cn('grid gap-2 text-xs font-medium uppercase text-text-muted', getSetGrid(kind))}>
         <span className="text-center">#</span>
         <span>Вес, кг</span>
-        <span>Повторы</span>
+        {kind === 'time' ? (
+          <>
+            <span className="text-center">Мин</span>
+            <span className="text-center">Сек</span>
+          </>
+        ) : (
+          <span>Повторы</span>
+        )}
         <span className="text-center" title="Повторов в запасе (reps in reserve)">
           RIR
         </span>
@@ -87,9 +119,11 @@ export const ExerciseEntryCard = ({
           <SetRow
             key={set.key}
             index={setIndex}
+            kind={kind}
             set={set}
             weightError={errors[`${path}.sets.${setIndex}.weight`]}
             repsError={errors[`${path}.sets.${setIndex}.reps`]}
+            durationError={errors[`${path}.sets.${setIndex}.duration`]}
             rirError={errors[`${path}.sets.${setIndex}.rir`]}
             canRemove={entry.sets.length > 1}
             onChange={(field, value) => onSetChange(set.key, field, value)}

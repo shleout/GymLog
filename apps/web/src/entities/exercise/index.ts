@@ -1,5 +1,5 @@
-export type { Exercise, ExerciseState } from './model/types'
-export { ExerciseSchema, ExerciseStateSchema } from './model/schemas'
+export type { Exercise, ExerciseKind, ExerciseState } from './model/types'
+export { EXERCISE_KINDS, ExerciseKindSchema, ExerciseSchema, ExerciseStateSchema } from './model/schemas'
 export {
   selectActiveExercises,
   useExerciseById,

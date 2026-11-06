@@ -27,17 +27,24 @@ export const ExerciseSummary = ({ progress }: ExerciseSummaryProps) => {
   // Fixed on mount, like the chart periods: re-renders must not shift the window.
   const [now] = useState(() => Date.now())
   const change = getRecentChange(progress.points, RECENT_MONTHS, now)
-  const unit = progress.kind === 'weight' ? 'кг' : 'повт.'
+  const unit = { weight: 'кг', reps: 'повт.', time: 'с' }[progress.kind]
 
   if (!best) return null
 
   const rows = [
     {
-      label: progress.kind === 'weight' ? 'Расчётный 1ПМ' : 'Лучший результат',
+      label: {
+        weight: 'Расчётный 1ПМ',
+        reps: 'Лучший результат',
+        time: 'Лучшее удержание',
+      }[progress.kind],
       value: formatProgressValue(best, progress.kind),
       details: [
         formatShortDate(best.date),
-        ...(progress.kind === 'weight' && best.set.reps > 1 ? [formatSet(best.set)] : []),
+        ...(progress.kind === 'weight' && (best.set.reps ?? 0) > 1
+          ? [formatSet(best.set)]
+          : []),
+        ...(progress.kind === 'time' && best.set.weight !== undefined ? [formatSet(best.set)] : []),
       ],
     },
     ...(bestSingle

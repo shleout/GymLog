@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { z } from 'zod'
+import { ExerciseKindSchema } from '@/entities/exercise'
 import { hasDraft } from '@/shared/lib'
 import type { WorkoutDraft } from './types'
 
@@ -7,7 +8,9 @@ const SetDraftSchema = z.object({
   key: z.string(),
   weight: z.string(),
   reps: z.string(),
-  // Defaults: drafts started before notes and RIR existed stay valid.
+  minutes: z.string().default(''),
+  seconds: z.string().default(''),
+  // Defaults: drafts started before notes, RIR and timed sets existed stay valid.
   rir: z.string().default(''),
   completed: z.boolean(),
 })
@@ -19,6 +22,7 @@ export const WorkoutDraftSchema: z.ZodType<WorkoutDraft> = z.object({
     z.object({
       key: z.string(),
       name: z.string(),
+      kind: ExerciseKindSchema.default('reps'),
       sets: z.array(SetDraftSchema),
       note: z.string().default(''),
     }),

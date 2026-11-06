@@ -10,7 +10,7 @@ import {
   useWorkouts,
 } from '@/entities/workout'
 import { paths } from '@/shared/config'
-import { cn, formatNumber, pluralize } from '@/shared/lib'
+import { cn, formatDuration, formatNumber, pluralize } from '@/shared/lib'
 import { Input } from '@/shared/ui'
 
 type ExerciseListProps = {
@@ -27,16 +27,18 @@ type Row = {
   best?: string
   /** Change of the best over the last months, same unit as `best`. */
   change?: number
+  /** Unit appended to the change when it isn't obvious from `best` (seconds of a hold). */
+  changeUnit?: string
 }
 
 /** The same window as the summary on the exercise page. */
 const RECENT_MONTHS = 3
 
 /** `↑ 4`, `↓ 2,5`, `±0`. */
-const formatChange = (change: number): string => {
+const formatChange = (change: number, unit = ''): string => {
   const rounded = Math.round(change * 10) / 10
   if (rounded === 0) return '±0'
-  return `${rounded > 0 ? '↑' : '↓'} ${formatNumber(Math.abs(rounded))}`
+  return `${rounded > 0 ? '↑' : '↓'} ${formatNumber(Math.abs(rounded))}${unit}`
 }
 
 export const ExerciseList = ({ className }: ExerciseListProps) => {
@@ -59,8 +61,13 @@ export const ExerciseList = ({ className }: ExerciseListProps) => {
           return {
             ...base,
             details: `${format(parseISO(sessions[0].date), 'd MMM', { locale: ru })} · ${sessions.length} ${pluralize(sessions.length, ['тренировка', 'тренировки', 'тренировок'])}`,
-            best: progress.kind === 'weight' ? `1ПМ ${formatNumber(best)}` : `${best} повт.`,
+            best: {
+              weight: `1ПМ ${formatNumber(best)}`,
+              reps: `${best} повт.`,
+              time: formatDuration(best),
+            }[progress.kind],
             change: getRecentChange(progress.points, RECENT_MONTHS, now),
+            changeUnit: progress.kind === 'time' ? ' с' : undefined,
           }
         }),
     [exercises, workouts, now],
@@ -108,13 +115,13 @@ export const ExerciseList = ({ className }: ExerciseListProps) => {
                     <span className="font-semibold">{row.best}</span>
                     {row.change !== undefined && (
                       <span
-                        aria-label={`За ${RECENT_MONTHS} месяца: ${formatChange(row.change)}`}
+                        aria-label={`За ${RECENT_MONTHS} месяца: ${formatChange(row.change, row.changeUnit)}`}
                         className={cn(
                           'text-sm font-semibold',
                           row.change > 0 ? 'text-primary' : row.change < 0 ? 'text-danger' : 'text-text-muted',
                         )}
                       >
-                        {formatChange(row.change)}
+                        {formatChange(row.change, row.changeUnit)}
                       </span>
                     )}
                   </span>

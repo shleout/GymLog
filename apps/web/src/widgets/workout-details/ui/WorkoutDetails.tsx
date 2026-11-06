@@ -3,7 +3,7 @@ import { Link } from 'react-router'
 import { useExerciseStore, type Exercise } from '@/entities/exercise'
 import { getWorkoutStats, type Workout } from '@/entities/workout'
 import { paths } from '@/shared/config'
-import { cn, formatNumber } from '@/shared/lib'
+import { cn, formatDuration, formatNumber } from '@/shared/lib'
 
 type WorkoutDetailsProps = {
   workout: Workout
@@ -47,7 +47,12 @@ export const WorkoutDetailsView = ({
   const summary = [
     { label: 'Упражнений', value: formatNumber(stats.exercisesCount) },
     { label: 'Подходов', value: formatNumber(stats.setsCount) },
-    { label: 'Повторений', value: formatNumber(stats.repsCount) },
+    ...(stats.repsCount > 0 || stats.holdSeconds === 0
+      ? [{ label: 'Повторений', value: formatNumber(stats.repsCount) }]
+      : []),
+    ...(stats.holdSeconds > 0
+      ? [{ label: 'Под нагрузкой', value: formatDuration(stats.holdSeconds) }]
+      : []),
     ...(stats.volume > 0 ? [{ label: 'Объём, кг', value: formatNumber(stats.volume) }] : []),
   ]
 
@@ -95,7 +100,9 @@ export const WorkoutDetailsView = ({
                 <tr>
                   <th scope="col" className="w-8 pb-1 text-center font-medium">#</th>
                   <th scope="col" className="pb-1 font-medium">Вес, кг</th>
-                  <th scope="col" className="pb-1 font-medium">Повторы</th>
+                  <th scope="col" className="pb-1 font-medium">
+                    {entry.sets.some((set) => set.durationSec !== undefined) ? 'Время' : 'Повторы'}
+                  </th>
                   {hasRir && (
                     <th scope="col" className="w-12 pb-1 text-center font-medium">RIR</th>
                   )}
@@ -112,7 +119,9 @@ export const WorkoutDetailsView = ({
                         formatNumber(set.weight)
                       )}
                     </td>
-                    <td className="py-2">{set.reps}</td>
+                    <td className="py-2">
+                      {set.durationSec === undefined ? set.reps : formatDuration(set.durationSec)}
+                    </td>
                     {hasRir && (
                       <td className="py-2 text-center">
                         {set.rir ?? <span className="text-text-muted">—</span>}

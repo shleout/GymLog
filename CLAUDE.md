@@ -39,8 +39,10 @@
 - Между слоями — алиас `@/` (`@/entities/workout`), внутри слайса — относительные пути.
 
 ## Доменная модель
-- Exercise: id, name, muscleGroup?.
-- Set: id, weight? (кг, шаг 0.5), reps, completed, rir? (повторы в запасе, целое 0–10).
+- Exercise: id, name, muscleGroup?, kind (`reps` | `time`; по умолчанию `reps`). Тип выбирается при
+  создании (AddExerciseForm или новое имя в форме тренировки), у известного имени он фиксирован.
+- Set: id, weight? (кг, шаг 0.5), reps ИЛИ durationSec (ровно одно из двух: повторы или удержание в
+  секундах, в форме вводятся минуты и секунды), completed, rir? (повторы в запасе, целое 0–10).
   Живёт в entities/workout/model.
 - WorkoutEntry: exerciseId, sets: Set[], note?. Workout: id, date (ISO), entries, note?.
   Заметки — trim, 1–1000 символов, пустая = нет поля. Заметка тренировки — колонка в БД,

@@ -1,14 +1,16 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
-import type { MaxRepsRecord, RepRecord } from '@/entities/workout'
+import type { MaxRepsRecord, MaxTimeRecord, RepRecord, TimeRecord } from '@/entities/workout'
 import { paths } from '@/shared/config'
-import { formatNumber } from '@/shared/lib'
+import { formatDuration, formatNumber } from '@/shared/lib'
 import { Button } from '@/shared/ui'
 import { formatShortDate } from '../lib/formatDate'
 
 type RecordsTableProps =
   | { kind: 'weight'; records: RepRecord[] }
   | { kind: 'reps'; records: MaxRepsRecord[] }
+  | { kind: 'holdWeight'; records: TimeRecord[] }
+  | { kind: 'hold'; records: MaxTimeRecord[] }
 
 type Row = {
   key: string
@@ -23,24 +25,46 @@ const COLLAPSED_COUNT = 6
 const DESCRIPTIONS = {
   weight: 'Подходы, которые не побил ни один другой — одновременно по весу и по повторениям.',
   reps: 'Рекорд повторений за один подход и как он рос — сверху текущий.',
+  holdWeight: 'Удержания, которые не побило ни одно другое — одновременно по весу и по времени.',
+  hold: 'Рекорд времени удержания и как он рос — сверху текущий.',
 }
 
-const toRows = (props: RecordsTableProps): Row[] =>
-  props.kind === 'weight'
-    ? props.records.map((record) => ({
+const toRows = (props: RecordsTableProps): Row[] => {
+  switch (props.kind) {
+    case 'weight':
+      return props.records.map((record) => ({
         key: String(record.reps),
         title: `${record.reps} повт.`,
         value: `${formatNumber(record.weight)} кг`,
         workoutId: record.workoutId,
         date: record.date,
       }))
-    : props.records.map((record, index) => ({
+    case 'holdWeight':
+      return props.records.map((record) => ({
+        key: String(record.durationSec),
+        title: formatDuration(record.durationSec),
+        value: `${formatNumber(record.weight)} кг`,
+        workoutId: record.workoutId,
+        date: record.date,
+      }))
+    case 'reps':
+      return props.records.map((record, index) => ({
         key: record.workoutId,
         title: index === 0 ? 'Текущий рекорд' : 'Был рекордом',
         value: `${record.reps} повт.`,
         workoutId: record.workoutId,
         date: record.date,
       }))
+    case 'hold':
+      return props.records.map((record, index) => ({
+        key: record.workoutId,
+        title: index === 0 ? 'Текущий рекорд' : 'Был рекордом',
+        value: formatDuration(record.durationSec),
+        workoutId: record.workoutId,
+        date: record.date,
+      }))
+  }
+}
 
 export const RecordsTable = (props: RecordsTableProps) => {
   const [expanded, setExpanded] = useState(false)

@@ -5,14 +5,17 @@ import type { ExerciseSession } from './getExerciseSessions'
 export type ProgressPoint = {
   workoutId: string
   date: string
-  /** Estimated 1RM (kg) for `weight` progress, reps for `reps`. */
+  /** Estimated 1RM (kg) for `weight` progress, reps for `reps`, seconds for `time`. */
   value: number
   set: Set
 }
 
 export type ExerciseProgress = {
-  /** `weight` if the exercise was ever done with weight, otherwise `reps` (bodyweight). */
-  kind: 'weight' | 'reps'
+  /**
+   * `time` for holds; otherwise `weight` if the exercise was ever done with weight, and
+   * `reps` if not (bodyweight).
+   */
+  kind: 'weight' | 'reps' | 'time'
   /** Best set of each workout, oldest first. */
   points: ProgressPoint[]
   /** The heaviest single (exactly 1 rep) of each workout that had one, oldest first. */
@@ -24,6 +27,7 @@ export type ExerciseProgress = {
 /** Progress over the sessions returned by `getExerciseSessions`. */
 export const getExerciseProgress = (sessions: ExerciseSession[]): ExerciseProgress => {
   const weighted = sessions.some((session) => session.sets.some((set) => set.weight !== undefined))
+  const timed = sessions.some((session) => session.sets.some((set) => set.durationSec !== undefined))
   const points: ProgressPoint[] = []
   const singles: ProgressPoint[] = []
   let singleCount = 0
@@ -50,5 +54,6 @@ export const getExerciseProgress = (sessions: ExerciseSession[]): ExerciseProgre
     }
   }
 
-  return { kind: weighted ? 'weight' : 'reps', points, singles, singleCount }
+  const kind = timed ? 'time' : weighted ? 'weight' : 'reps'
+  return { kind, points, singles, singleCount }
 }

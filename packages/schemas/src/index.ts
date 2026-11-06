@@ -20,7 +20,13 @@ export {
   type User,
   type UserRole,
 } from './auth.js'
-export { ExerciseSchema, type Exercise } from './exercise.js'
+export {
+  EXERCISE_KINDS,
+  ExerciseKindSchema,
+  ExerciseSchema,
+  type Exercise,
+  type ExerciseKind,
+} from './exercise.js'
 export {
   MeasurementSchema,
   MeasurementValueSchema,
@@ -53,7 +59,10 @@ export {
   type SyncMeta,
 } from './syncMeta.js'
 export {
+  DURATION_MAX_SEC,
+  DurationSecSchema,
   NOTE_MAX_LENGTH,
+  RepsSchema,
   RIR_MAX,
   SetSchema,
   WorkoutEntrySchema,

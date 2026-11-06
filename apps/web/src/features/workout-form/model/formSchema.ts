@@ -1,6 +1,6 @@
 import { isValid, parse } from 'date-fns'
 import { z } from 'zod'
-import { SetSchema, WorkoutSchema } from '@/entities/workout'
+import { DurationSecSchema, RepsSchema, SetSchema, WorkoutSchema } from '@/entities/workout'
 import { parseDecimal } from '@/shared/lib'
 
 const DateField = z
@@ -23,17 +23,63 @@ const NoteField = z
   .transform((value) => value || undefined)
   .pipe(WorkoutSchema.shape.note)
 
-const SetField = z.object({
-  weight: z.string().trim().transform(parseDecimal).pipe(SetSchema.shape.weight),
-  reps: z.string().trim().transform(parseDecimal).pipe(SetSchema.shape.reps),
-  rir: z.string().trim().transform(parseDecimal).pipe(SetSchema.shape.rir),
+const WeightField = z.string().trim().transform(parseDecimal).pipe(SetSchema.shape.weight)
+const RirField = z.string().trim().transform(parseDecimal).pipe(SetSchema.shape.rir)
+
+const RepsSetField = z.object({
+  weight: WeightField,
+  reps: z.string().trim().transform(parseDecimal).pipe(RepsSchema),
+  rir: RirField,
 })
 
-const EntryField = z.object({
+/** Minutes and seconds are separate inputs; an empty one counts as 0, the sum must be positive. */
+const TimeSetField = z
+  .object({
+    weight: WeightField,
+    minutes: z.string().trim(),
+    seconds: z.string().trim(),
+    rir: RirField,
+  })
+  .transform(({ minutes, seconds, ...rest }, ctx) => {
+    const m = parseDecimal(minutes) ?? 0
+    const s = parseDecimal(seconds) ?? 0
+    if (!Number.isInteger(m) || m < 0 || !Number.isInteger(s) || s < 0 || s > 59) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['duration'],
+        message: 'Минуты — целые, секунды — от 0 до 59',
+      })
+      return z.NEVER
+    }
+    const duration = DurationSecSchema.safeParse(m * 60 + s)
+    if (!duration.success) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['duration'],
+        message: m * 60 + s === 0 ? 'Укажите время' : duration.error.issues[0].message,
+      })
+      return z.NEVER
+    }
+    return { ...rest, durationSec: duration.data }
+  })
+
+const entryShape = {
   name: z.string().trim().min(1, 'Введите название упражнения'),
-  sets: z.array(SetField).min(1, 'Добавьте хотя бы один подход'),
   note: NoteField,
-})
+}
+
+const EntryField = z.discriminatedUnion('kind', [
+  z.object({
+    ...entryShape,
+    kind: z.literal('reps'),
+    sets: z.array(RepsSetField).min(1, 'Добавьте хотя бы один подход'),
+  }),
+  z.object({
+    ...entryShape,
+    kind: z.literal('time'),
+    sets: z.array(TimeSetField).min(1, 'Добавьте хотя бы один подход'),
+  }),
+])
 
 export const WorkoutFormSchema = z.object({
   date: DateField,
