@@ -32,7 +32,10 @@ const RepsSetField = z.object({
   rir: RirField,
 })
 
-/** Minutes and seconds are separate inputs; an empty one counts as 0, the sum must be positive. */
+/**
+ * Minutes and seconds are separate inputs; an empty one counts as 0, the sum must be positive.
+ * Fractional seconds are rounded to whole ones.
+ */
 const TimeSetField = z
   .object({
     weight: WeightField,
@@ -42,7 +45,7 @@ const TimeSetField = z
   })
   .transform(({ minutes, seconds, ...rest }, ctx) => {
     const m = parseDecimal(minutes) ?? 0
-    const s = parseDecimal(seconds) ?? 0
+    const s = Math.round(parseDecimal(seconds) ?? 0)
     if (!Number.isInteger(m) || m < 0 || !Number.isInteger(s) || s < 0 || s > 59) {
       ctx.addIssue({
         code: 'custom',
