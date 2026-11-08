@@ -10,6 +10,7 @@ import { LoginPage } from '@/pages/login'
 import { MeasurementDetailsPage } from '@/pages/measurement-details'
 import { MeasurementsPage } from '@/pages/measurements'
 import { ProfilePage } from '@/pages/profile'
+import { ProgressPage } from '@/pages/progress'
 import { WorkoutDetailsPage } from '@/pages/workout-details'
 import { WorkoutHistoryPage } from '@/pages/workout-history'
 import { ROUTES } from '@/shared/config'
@@ -28,6 +29,7 @@ export const router = createBrowserRouter([
         element: <TabLayout />,
         children: [
           { path: ROUTES.home, element: <WorkoutHistoryPage /> },
+          { path: ROUTES.progress, element: <ProgressPage /> },
           { path: ROUTES.measurements, element: <MeasurementsPage /> },
           { path: ROUTES.exercises, element: <ExercisesPage /> },
           { path: ROUTES.profile, element: <ProfilePage /> },

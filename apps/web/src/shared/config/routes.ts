@@ -11,6 +11,7 @@ export const ROUTES = {
   editProfile: '/profile/edit',
   exercises: '/exercises',
   exercise: '/exercises/:exerciseId',
+  progress: '/progress',
   login: '/login',
   admin: '/admin',
   adminUser: '/admin/users/:userId',

@@ -48,6 +48,16 @@ const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
+    to: ROUTES.progress,
+    label: 'Прогресс',
+    icon: (
+      <Icon>
+        <path d="M3 17 9 11l4 4 8-8" />
+        <path d="M15 7h6v6" />
+      </Icon>
+    ),
+  },
+  {
     to: ROUTES.measurements,
     label: 'Замеры',
     icon: (

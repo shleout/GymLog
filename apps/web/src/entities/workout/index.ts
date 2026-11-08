@@ -40,3 +40,9 @@ export {
   SET_MODES,
   type SetMode,
 } from './lib/setMode'
+export {
+  getExerciseTrend,
+  STALL_SESSIONS,
+  type ExerciseTrend,
+  type TrendStatus,
+} from './lib/getExerciseTrend'
