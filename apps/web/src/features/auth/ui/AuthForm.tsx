@@ -1,4 +1,5 @@
 import { useId, type FormEvent } from 'react'
+import { cn } from '@/shared/lib'
 import { Button, Input, PasswordInput } from '@/shared/ui'
 import { useAuthForm, type AuthMode } from '../model/useAuthForm'
 
@@ -79,11 +80,14 @@ export const AuthForm = ({ mode }: AuthFormProps) => {
         {form.pending ? 'Подождите…' : mode === 'login' ? 'Войти' : 'Зарегистрироваться'}
       </Button>
 
-      {form.slow && (
-        <p className="text-center text-sm text-text-muted">
-          Сервер просыпается — первый запрос может занять до минуты.
-        </p>
-      )}
+      <p
+        role={form.slow ? 'status' : undefined}
+        className={cn('text-center text-sm', form.slow ? 'text-text' : 'text-text-muted')}
+      >
+        {form.slow
+          ? 'Сервер просыпается — подождите, это может занять до минуты.'
+          : 'Если сервер давно не использовали, вход или регистрация могут занять около минуты.'}
+      </p>
     </form>
   )
 }
